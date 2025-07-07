@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/app_colors.dart';
-import 'package:denemeye_devam/widgets/salon_card.dart';
+import 'package:denemeye_devam/core/app_colors.dart';
 
-import '../screens/lib/screens/salon_detail_screen.dart'; // Yeni detay sayfamızı import ettik
+import 'package:denemeye_devam/features/appointments/screens/salon_detail_screen.dart'; // Yeni detay sayfamızı import ettik
 
 class SalonCard extends StatelessWidget {
   final String name;

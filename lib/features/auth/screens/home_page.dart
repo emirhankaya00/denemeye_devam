@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/my_button.dart';
-import 'package:denemeye_devam/widgets/custom_text_field.dart';
-import 'package:denemeye_devam/app_colors.dart';
-import 'package:denemeye_devam/widgets/custom_card.dart';
-import 'package:denemeye_devam/screens/lib/screens/dashboard_screen.dart'; // DashboardScreen'ı import et!
+import 'package:denemeye_devam/features/common/widgets/my_button.dart';
+import 'package:denemeye_devam/features/common/widgets/custom_text_field.dart';
+import 'package:denemeye_devam/core/app_colors.dart';
+import 'package:denemeye_devam/features/common/widgets/custom_card.dart';
+import 'package:denemeye_devam/screens/dashboard_screen.dart'; // DashboardScreen'ı import et!
 
 
 class HomePage extends StatefulWidget {
@@ -92,8 +92,8 @@ class _HomePageState extends State<HomePage> {
                       // Kullanıcı adı ve şifre kontrolü burada yapılabilir
                       // Şimdilik direkt geçiş yapıyoruz.
 
-                      print('Kullanıcı Adı: ${_usernameController.text}');
-                      print('Şifre: ${_passwordController.text}');
+                      debugPrint('Kullanıcı Adı: ${_usernameController.text}');
+                      debugPrint('Şifre: ${_passwordController.text}');
 
                       // SnackBar gösterimi devam edebilir
                       ScaffoldMessenger.of(context).showSnackBar(

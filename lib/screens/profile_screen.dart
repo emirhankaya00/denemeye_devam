@@ -1,11 +1,11 @@
 // lib/screens/profile_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/app_colors.dart'; // Senin renk tanımların
-import 'package:denemeye_devam/app_fonts.dart';   // Senin font tanımların
+import 'package:denemeye_devam/core/app_colors.dart'; // Senin renk tanımların
+import 'package:denemeye_devam/core/app_fonts.dart';   // Senin font tanımların
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +40,7 @@ class ProfileScreen extends StatelessWidget {
                     border: Border.all(color: Colors.white, width: 5), // Beyaz çerçeve (daha belirgin)
                     boxShadow: [ // Hafif bir gölge
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
+                        color: Colors.black.withValues(alpha: 0.15),
                         blurRadius: 15,
                         offset: const Offset(0, 8),
                       ),

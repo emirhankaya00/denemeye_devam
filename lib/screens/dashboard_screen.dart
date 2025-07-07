@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/app_colors.dart'; // AppColors sınıfını import ettik
-import 'package:denemeye_devam/app_fonts.dart';   // AppFonts sınıfını import ettik
-import 'package:denemeye_devam/screens/home_page.dart'; // Login ekranı, logout için
+import 'package:denemeye_devam/core/app_colors.dart'; // AppColors sınıfını import ettik
+import 'package:denemeye_devam/core/app_fonts.dart';   // AppFonts sınıfını import ettik
+import 'package:denemeye_devam/features/auth/screens/home_page.dart'; // Login ekranı, logout için
 import 'package:denemeye_devam/screens/search_screen.dart'; // Arama sayfası
-import 'package:denemeye_devam/screens/appointments_screen.dart'; // Randevu sayfası
-import 'package:denemeye_devam/screens/lib/screens/favorites_screen.dart'; // Favoriler sayfası (yeni!)
+import 'package:denemeye_devam/features/appointments/screens/appointments_screen.dart'; // Randevu sayfası
+import 'package:denemeye_devam/screens/favorites_screen.dart'; // Favoriler sayfası (yeni!)
 // Diğer ekranlarınız (örneğin profil sayfası)
 
 
 
-import 'package:denemeye_devam/widgets/salon_card.dart';
+import 'package:denemeye_devam/features/common/widgets/salon_card.dart';
 
-import 'favorites_screen.dart';
 // Salon Detay sayfanız eğer ana root içinde değilse (önceki kodda lib/screens/lib/salon_detail_screen.dart gibiydi, yolu düzeltildi)
 // import 'package:denemeye_devam/screens/salon_detail_screen.dart';
 
@@ -57,11 +56,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // BottomNavigationBar öğesine tıklandığında çağrılır
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +119,7 @@ class _DashboardContent extends StatelessWidget {
                       borderRadius: BorderRadius.circular(30), // Tam yuvarlak köşeler
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 5,
                           offset: const Offset(0, 2),
                         ),

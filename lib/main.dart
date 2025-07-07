@@ -1,7 +1,7 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/app_colors.dart'; // AppColors sınıfını import et
-import 'package:denemeye_devam/screens/lib/screens/root_screen.dar.dart';
+import 'package:denemeye_devam/core/app_colors.dart'; // AppColors sınıfını import et
+import 'package:denemeye_devam/screens/root_screen.dart';
 import 'package:intl/date_symbol_data_local.dart'; // <-- intl için gerekli import
 
 void main() async { // <-- main fonksiyonu async yapıldı

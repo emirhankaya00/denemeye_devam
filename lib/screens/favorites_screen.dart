@@ -1,7 +1,7 @@
 // lib/screens/favorites_screen.dart
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/app_colors.dart'; // Renkler için
-import 'package:denemeye_devam/app_fonts.dart';   // Fontlar için
+import 'package:denemeye_devam/core/app_colors.dart'; // Renkler için
+import 'package:denemeye_devam/core/app_fonts.dart';   // Fontlar için
 
 // Eğer favori salon için bir modelin varsa onu import et
 // import 'package:denemeye_devam/data/models/salon.dart';
@@ -16,14 +16,14 @@ class FavoriteSalonCard extends StatelessWidget {
   final VoidCallback onBookAppointment; // Randevu al/İletişim kur callback'i
 
   const FavoriteSalonCard({
-    Key? key,
+    super.key,
     required this.name,
     required this.description,
     required this.rating,
     this.imageUrl,
     required this.onRemoveFavorite,
     required this.onBookAppointment,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +138,7 @@ class FavoriteSalonCard extends StatelessWidget {
 
 // Ana Favoriler Sayfası
 class FavoritesScreen extends StatefulWidget {
-  const FavoritesScreen({Key? key}) : super(key: key);
+  const FavoritesScreen({super.key});
 
   @override
   State<FavoritesScreen> createState() => _FavoritesScreenState();
@@ -249,7 +249,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             Icon(
               Icons.favorite_border,
               size: 80,
-              color: AppColors.iconColor.withOpacity(0.5),
+              color: AppColors.iconColor.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 20),
             Text(

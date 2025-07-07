@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/app_colors.dart';
-import 'package:denemeye_devam/app_fonts.dart'; // app_fonts.dart dosyanızın yolu
+import 'package:denemeye_devam/core/app_colors.dart';
+import 'package:denemeye_devam/core/app_fonts.dart'; // app_fonts.dart dosyanızın yolu
 
 class MyCustomButton extends StatelessWidget {
   final VoidCallback onPressed;
@@ -27,7 +27,7 @@ class MyCustomButton extends StatelessWidget {
               (Set<WidgetState> states) {
             if (states.contains(WidgetState.pressed)) {
               // Butona basıldığında bir dalgalanma (ripple) rengi
-              return Theme.of(context).colorScheme.primary.withOpacity(0.2);
+              return Theme.of(context).colorScheme.primary.withValues(alpha: 0.2);
             }
             return null;
           },

@@ -1,18 +1,18 @@
 // lib/screens/root_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/app_colors.dart'; // Renkler için
-import 'package:denemeye_devam/app_fonts.dart';   // Fontlar için
+import 'package:denemeye_devam/core/app_colors.dart'; // Renkler için
+import 'package:denemeye_devam/core/app_fonts.dart';   // Fontlar için
 
 // Ekran importları - YOLLAR DÜZELTİLDİ VE PROFİL EKLENDİ!
-import 'package:denemeye_devam/screens/lib/screens/dashboard_screen.dart'; // Doğru yol
-import 'package:denemeye_devam/screens/appointments_screen.dart'; // Doğru yol
+import 'package:denemeye_devam/screens/dashboard_screen.dart';
+import 'package:denemeye_devam/features/appointments/screens/appointments_screen.dart'; // Doğru yol
 import 'package:denemeye_devam/screens/search_screen.dart'; // Doğru yol
-import 'package:denemeye_devam/screens/lib/screens/favorites_screen.dart'; // Doğru yol
+import 'package:denemeye_devam/screens/favorites_screen.dart'; // Doğru yol
 import 'package:denemeye_devam/screens/profile_screen.dart'; // <-- PROFİL SAYFASINI BURAYA EKLEDİK VE YOLU DÜZELTTİK!
 
 class RootScreen extends StatefulWidget {
-  const RootScreen({Key? key}) : super(key: key);
+  const RootScreen({super.key});
 
   @override
   State<RootScreen> createState() => _RootScreenState();
@@ -74,14 +74,14 @@ class _RootScreenState extends State<RootScreen> {
         currentIndex: _selectedIndex,
         // Seçili ve seçili olmayan öğelerin (ikon + metin) renkleri beyaz/hafif opak beyaz
         selectedItemColor: AppColors.textOnPrimary,
-        unselectedItemColor: AppColors.textOnPrimary.withOpacity(0.7),
+        unselectedItemColor: AppColors.textOnPrimary.withValues(alpha: 0.7),
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
         backgroundColor: AppColors.primaryColor, // Barın arka plan rengi
         elevation: 10, // Gölge efekti
         // Label stilleri de artık beyaz rengi kullanacak
         selectedLabelStyle: AppFonts.bodySmall(color: AppColors.textOnPrimary),
-        unselectedLabelStyle: AppFonts.bodySmall(color: AppColors.textOnPrimary.withOpacity(0.7)),
+        unselectedLabelStyle: AppFonts.bodySmall(color: AppColors.textOnPrimary.withValues(alpha: 0.7)),
       ),
     );
   }

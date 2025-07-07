@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/app_colors.dart';
-import 'package:denemeye_devam/app_fonts.dart'; // AppFonts'u import ettiğinizden emin olun!
+import 'package:denemeye_devam/core/app_colors.dart';
+import 'package:denemeye_devam/core/app_fonts.dart'; // AppFonts'u import ettiğinizden emin olun!
 
 // import 'package:denemeye_devam/widgets/salon_card.dart'; // Eğer SalonCard'a benzer bir yapı kullanacaksak
 
@@ -35,7 +35,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   // Örnek randevu verileri
-  List<Appointment> _allAppointments = [
+  final List<Appointment> _allAppointments = [
     Appointment(
       salonName: 'Mustafa Güzellik Salonu 1',
       date: '15 Tem 2025',
@@ -277,7 +277,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -292,7 +292,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             width: 70, // Görseldeki gibi biraz daha büyük
             height: 70, // Görseldeki gibi biraz daha büyük
             decoration: BoxDecoration(
-              color: AppColors.primaryColor.withOpacity(0.8), // Placeholder renk
+              color: AppColors.primaryColor.withValues(alpha: 0.8), // Placeholder renk
               borderRadius: BorderRadius.circular(15), // Daha yuvarlak köşeler
             ),
             child: const Center(
@@ -416,7 +416,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
       padding: const EdgeInsets.all(20),
       margin: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.cardColor.withOpacity(0.8),
+        color: AppColors.cardColor.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(15),
       ),
       child: Center(

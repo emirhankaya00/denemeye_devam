@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/app_colors.dart'; // Renkler için AppColors kullanıyorsan
+import 'package:denemeye_devam/core/app_colors.dart'; // Renkler için AppColors kullanıyorsan
 
 class CustomTextField extends StatefulWidget {
   final TextEditingController? controller;
@@ -36,7 +36,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
     // Focus durumuna göre border ve shadow renklerini ayarla
     final Color borderColor = widget.isFocused ? AppColors.accentColor : AppColors.borderColor;
-    final Color shadowColor = widget.isFocused ? AppColors.accentColor.withOpacity(0.3) : Colors.transparent;
+    final Color shadowColor = widget.isFocused ? AppColors.accentColor.withValues(alpha: 0.3) : Colors.transparent;
     final double elevation = widget.isFocused ? 8.0 : 3.0; // Focuslandığında daha belirgin yükselsin
 
     return AnimatedContainer(
@@ -73,7 +73,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             color: widget.isFocused ? AppColors.accentColor : AppColors.textColorLight,
           ),
           hintStyle: TextStyle(
-            color: AppColors.textColorLight.withOpacity(0.6),
+            color: AppColors.textColorLight.withValues(alpha:0.6),
           ),
           prefixIcon: widget.prefixIcon != null
               ? Icon(

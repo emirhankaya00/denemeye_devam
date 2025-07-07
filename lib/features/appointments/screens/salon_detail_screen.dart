@@ -1,6 +1,4 @@
 // 1. Dart SDK'sı importları
-import 'dart:async';
-import 'dart:io';
 
 // 2. Flutter framework importu (genellikle ilk)
 import 'package:flutter/material.dart';
@@ -10,8 +8,8 @@ import 'package:intl/intl.dart'; // Tarih formatlama için
 import 'package:intl/date_symbol_data_local.dart'; // initializeDateFormatting için
 
 // 4. Kendi projenizin içindeki diğer dosyaların importları
-import 'package:denemeye_devam/app_colors.dart'; // AppColors sınıfı için
-import 'package:denemeye_devam/app_fonts.dart'; // AppFonts sınıfı için
+import 'package:denemeye_devam/core/app_colors.dart'; // AppColors sınıfı için
+import 'package:denemeye_devam/core/app_fonts.dart'; // AppFonts sınıfı için
 
 // Not: Bu sayfa için artık bu importlara doğrudan gerek yok,
 // çünkü detay ekranından genellikle Dashboard veya ana sayfaya geri dönülür.
@@ -30,7 +28,7 @@ class SalonDetailScreen extends StatefulWidget {
 
 class _SalonDetailScreenState extends State<SalonDetailScreen> {
   // Mevcut takvim verilerini dinamik olarak oluşturmak için
-  List<DateTime> _weekDates = [];
+  final List<DateTime> _weekDates = [];
   int _selectedDateIndex = 0;
   DateTime _selectedDate = DateTime.now(); // Seçilen tarihi tutmak için
   String? _selectedTimeSlot; // Seçilen saat dilimi
@@ -149,7 +147,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                                   decoration: BoxDecoration(
                                     color: isSelected ? AppColors.accentColor : AppColors.cardColor,
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: AppColors.dividerColor.withOpacity(0.5)),
+                                    border: Border.all(color: AppColors.dividerColor.withValues(alpha: 0.5)),
                                   ),
                                   child: Text(
                                     time,
@@ -186,10 +184,10 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                                   margin: const EdgeInsets.only(bottom: 10),
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: isSelected ? AppColors.primaryColor.withOpacity(0.1) : AppColors.cardColor,
+                                    color: isSelected ? AppColors.primaryColor.withValues(alpha: 0.1) : AppColors.cardColor,
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: isSelected ? AppColors.primaryColor : AppColors.dividerColor.withOpacity(0.5),
+                                      color: isSelected ? AppColors.primaryColor : AppColors.dividerColor.withValues(alpha: 0.5),
                                     ),
                                   ),
                                   child: Row(
@@ -368,7 +366,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         spreadRadius: 2,
                         blurRadius: 10,
                         offset: const Offset(0, 3),
@@ -404,11 +402,11 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.cardColor.withOpacity(0.9),
+                            color: AppColors.cardColor.withValues(alpha: 0.9),
                             borderRadius: BorderRadius.circular(15),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -593,7 +591,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                           borderRadius: BorderRadius.circular(15),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 5,
                               offset: const Offset(0, 2),
                             ),
@@ -660,7 +658,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                       borderRadius: BorderRadius.circular(15),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 5,
                           offset: const Offset(0, 2),
                         ),
@@ -692,7 +690,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -732,7 +730,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -782,7 +780,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -795,6 +793,8 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
             question,
             style: AppFonts.poppinsBold(fontSize: 16, color: AppColors.textColorDark),
           ),
+          collapsedIconColor: AppColors.textColorDark,
+          iconColor: AppColors.accentColor,
           children: <Widget>[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -804,8 +804,6 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
               ),
             ),
           ],
-          collapsedIconColor: AppColors.textColorDark,
-          iconColor: AppColors.accentColor,
         ),
       ),
     );
@@ -828,7 +826,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
             ),
             child: CircleAvatar(
               radius: 30, // Avatar boyutu
-              backgroundColor: isSelected ? AppColors.accentColor.withOpacity(0.2) : AppColors.cardColor,
+              backgroundColor: isSelected ? AppColors.accentColor.withValues(alpha: 0.2) : AppColors.cardColor,
               child: Text(
                 avatarText,
                 style: AppFonts.poppinsBold(

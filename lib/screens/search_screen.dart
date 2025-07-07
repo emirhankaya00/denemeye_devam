@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/app_colors.dart';
-import 'package:denemeye_devam/app_fonts.dart'; // AppFonts'u import ettiğinizden emin olun!
-import 'package:denemeye_devam/widgets/salon_card.dart';
+import 'package:denemeye_devam/core/app_colors.dart';
+import 'package:denemeye_devam/core/app_fonts.dart'; // AppFonts'u import ettiğinizden emin olun!
+import 'package:denemeye_devam/features/common/widgets/salon_card.dart';
 // import 'package:denemeye_devam/screens/salon_detail_screen.dart'; // Bu import'a burada ihtiyaç yok, sadece Dashboard'dan geçiyoruz
 
 class SearchScreen extends StatefulWidget {
@@ -15,7 +15,7 @@ class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _searchResults = [];
   String? _selectedCategory;
-  List<String> _categories = ['Saç bakımı', 'Manikür', 'Cilt Bakımı', 'Masaj', 'Epilasyon', 'Makyaj'];
+  final List<String> _categories = ['Saç bakımı', 'Manikür', 'Cilt Bakımı', 'Masaj', 'Epilasyon', 'Makyaj'];
 
   final List<Map<String, dynamic>> _allSalons = [
     {'name': 'Mustafa Güzellik Salonu 1', 'rating': '4.5', 'services': ['Saç Kesimi', 'Manikür', 'Tırnak Bakımı', 'Makyaj'], 'hasCampaign': false, 'address': 'Örnek Cad. No:1'},
@@ -171,7 +171,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                         side: BorderSide(
-                          color: isSelected ? AppColors.accentColor : AppColors.dividerColor.withOpacity(0.5),
+                          color: isSelected ? AppColors.accentColor : AppColors.dividerColor.withValues(alpha: 0.5),
                         ),
                       ),
                       elevation: isSelected ? 3 : 1,
@@ -206,15 +206,15 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 80, color: AppColors.textColorLight.withOpacity(0.5)),
+          Icon(Icons.search_off, size: 80, color: AppColors.textColorLight.withValues(alpha: 0.5)),
           const SizedBox(height: 20),
           Text(
             'Sonuç bulunamadı.',
-            style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorLight.withOpacity(0.8)), // Font güncellendi
+            style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorLight.withValues(alpha: 0.8)), // Font güncellendi
           ),
           Text(
             'Farklı bir kelime veya kategoriyle arama yapmayı deneyin.',
-            style: AppFonts.bodyMedium(color: AppColors.textColorLight.withOpacity(0.6)), // Font güncellendi
+            style: AppFonts.bodyMedium(color: AppColors.textColorLight.withValues(alpha: 0.6)), // Font güncellendi
           ),
         ],
       ),

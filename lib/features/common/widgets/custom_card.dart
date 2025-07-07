@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/app_colors.dart'; // AppColors sınıfını import etmeyi unutma
+import 'package:denemeye_devam/core/app_colors.dart'; // AppColors sınıfını import etmeyi unutma
 
 class CustomCard extends StatelessWidget {
   final Widget child; // Kartın içine gelecek içeriği alacak

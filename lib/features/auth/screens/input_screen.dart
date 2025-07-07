@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/app_colors.dart'; // Renkler için AppColors kullanıyorsan
-import '../widgets/custom_text_field.dart'; // Yeni oluşturacağımız CustomTextField'ı import et
+import 'package:denemeye_devam/core/app_colors.dart'; // Renkler için AppColors kullanıyorsan
+import 'package:denemeye_devam/features/common/widgets/custom_text_field.dart'; // Yeni oluşturacağımız CustomTextField'ı import et
 
 class InputScreen extends StatefulWidget {
   const InputScreen({super.key});
@@ -115,9 +115,9 @@ class _InputScreenState extends State<InputScreen> {
                     ElevatedButton(
                       onPressed: () {
                         // Giriş işlemi burada yapılacak
-                        print('Ad: ${_nameController.text}');
-                        print('Email: ${_emailController.text}');
-                        print('Şifre: ${_passwordController.text}');
+                        debugPrint('Ad: ${_nameController.text}');
+                        debugPrint('Email: ${_emailController.text}');
+                        debugPrint('Şifre: ${_passwordController.text}');
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Giriş Denemesi Yapıldı!')),
                         );
