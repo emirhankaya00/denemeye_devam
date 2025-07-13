@@ -241,6 +241,9 @@ class _DashboardContent extends StatelessWidget {
                 ),
                 SizedBox(
                   height: 200,
+                                //
+                                //    WIEDMODEL EKLENDİGİ YER // DUZENLENECEK.
+                                //
                   child: viewModel.isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : ListView.builder(
