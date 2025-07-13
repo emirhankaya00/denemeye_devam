@@ -1,14 +1,31 @@
 // lib/main.dart
+import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:denemeye_devam/core/app_colors.dart'; // AppColors sınıfını import et
 import 'package:denemeye_devam/screens/root_screen.dart';
 import 'package:intl/date_symbol_data_local.dart'; // <-- intl için gerekli import
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() async { // <-- main fonksiyonu async yapıldı
+void main() async {
+  // <-- main fonksiyonu async yapıldı
   WidgetsFlutterBinding.ensureInitialized(); // <-- Flutter binding'in başlatıldığından emin ol
-  await initializeDateFormatting('tr', null); // <-- Türkçe yerel veri başlatıldı
+  await initializeDateFormatting(
+    'tr',
+    null,
+  ); // <-- Türkçe yerel veri başlatıldı
+  await Supabase.initialize(
+    // Supabase projenin API ayarlarından aldığın bilgileri buraya yapıştır
+    url: '',
+    anonKey: '',
+  );
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => DashboardViewModel())],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
