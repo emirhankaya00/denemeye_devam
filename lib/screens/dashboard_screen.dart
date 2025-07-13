@@ -3,10 +3,10 @@ import 'package:denemeye_devam/core/app_fonts.dart';
 import 'package:denemeye_devam/features/appointments/screens/appointments_screen.dart';
 import 'package:denemeye_devam/features/auth/screens/home_page.dart';
 import 'package:denemeye_devam/features/common/widgets/salon_card.dart';
-import 'package:denemeye_devam/models/SaloonModel.dart'; // Model importu
+import 'package:denemeye_devam/models/SaloonModel.dart';
 import 'package:denemeye_devam/screens/favorites_screen.dart';
 import 'package:denemeye_devam/screens/search_screen.dart';
-import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart'; // ViewModel importu
+import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -25,47 +25,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _pages = <Widget>[
-      // Ana sayfa içeriği, arama sayfasına geçiş fonksiyonunu içerir.
       _DashboardContent(onSearchTap: () => setState(() => _selectedIndex = 2)),
       const AppointmentsScreen(),
       const SearchScreen(),
       const FavoritesScreen(),
-      // Profil sayfası için geçici bir placeholder
-      Center(
-        child: Text('Profil Sayfası', style: AppFonts.poppinsBold(fontSize: 24, color: AppColors.textColorDark)),
-      ),
+      Center(child: Text('Profil Sayfası', style: AppFonts.poppinsBold(fontSize: 24, color: AppColors.textColorDark))),
     ];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
     );
   }
 }
 
-//-------------------------------------------------------------------
 // ANA İÇERİK WIDGET'I
-//-------------------------------------------------------------------
 class _DashboardContent extends StatelessWidget {
   final VoidCallback onSearchTap;
   const _DashboardContent({required this.onSearchTap});
 
   @override
   Widget build(BuildContext context) {
-    // ViewModel'deki değişiklikleri dinlemek için Provider'ı kullan.
     final viewModel = Provider.of<DashboardViewModel>(context);
 
     return Column(
       children: [
-        // Üst Kısım: Arama Çubuğu ve Ayarlar Menüsü
         _TopBar(onSearchTap: onSearchTap),
-
-        // Kalan İçerik: Harita ve Salon Listeleri
         Expanded(
           child: viewModel.isLoading && viewModel.nearbySaloons.isEmpty
               ? const Center(child: CircularProgressIndicator())
@@ -76,26 +63,21 @@ class _DashboardContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Harita Placeholder
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(15),
-                      child: Image.asset('lib/assets/map_placeholder.png', fit: BoxFit.cover, height: 200, width: double.infinity),
+                      child: Image.asset('assets/map_placeholder.png', fit: BoxFit.cover, height: 200, width: double.infinity),
                     ),
                   ),
-
-                  // --- YAKINDAKİ SALONLAR ---
                   const SectionTitle(title: 'Yakınlarda bulunan salonlar'),
                   SaloonList(saloons: viewModel.nearbySaloons),
                   const SectionDivider(),
-
-                  // --- EN YÜKSEK PUANLI SALONLAR ---
                   const SectionTitle(title: 'En yüksek puanlı salonlar'),
                   SaloonList(saloons: viewModel.topRatedSaloons),
                   const SectionDivider(),
 
-                  // --- KAMPANYADAKİ SALONLAR ---
+                  // --- KAMPANYALI SALONLAR BÖLÜMÜNÜ GERİ EKLEDİK ---
                   const SectionTitle(title: 'Kampanyadaki salonlar'),
                   SaloonList(saloons: viewModel.campaignSaloons, hasCampaign: true),
                   const SizedBox(height: 20),
@@ -109,99 +91,45 @@ class _DashboardContent extends StatelessWidget {
   }
 }
 
-//-------------------------------------------------------------------
-// YARDIMCI WIDGET'LAR (KODU TEMİZ TUTMAK İÇİN)
-//-------------------------------------------------------------------
+// --- YARDIMCI WIDGET'LAR ---
 
-// Üst bar (Arama ve menü)
 class _TopBar extends StatelessWidget {
   final VoidCallback onSearchTap;
   const _TopBar({required this.onSearchTap});
-
   @override
   Widget build(BuildContext context) {
+    // ... (Bu widget'ın içeriği önceki cevapla aynı, değişmedi)
     return Container(
       padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 10, left: 16, right: 16, bottom: 10),
       color: AppColors.primaryColor,
       child: Row(
         children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: onSearchTap,
-              child: Container(
-                height: 45,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.cardColor,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 5, offset: const Offset(0, 2))],
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.search, color: AppColors.textColorLight),
-                    const SizedBox(width: 8),
-                    Text('Ara...', style: AppFonts.bodyMedium(color: AppColors.textColorLight)),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          Expanded(child: GestureDetector(onTap: onSearchTap, child: Container(height: 45, padding: const EdgeInsets.symmetric(horizontal: 16), decoration: BoxDecoration(color: AppColors.cardColor, borderRadius: BorderRadius.circular(30), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 5, offset: const Offset(0, 2))]), child: Row(children: [Icon(Icons.search, color: AppColors.textColorLight), const SizedBox(width: 8), Text('Ara...', style: AppFonts.bodyMedium(color: AppColors.textColorLight))])))),
           const SizedBox(width: 10),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            onSelected: (value) {
-              if (value == 'logout') {
-                Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const HomePage()), (route) => false);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Başarıyla çıkış yapıldı.')));
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem<String>(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, color: AppColors.textColorDark),
-                    const SizedBox(width: 8),
-                    Text('Çıkış Yap', style: AppFonts.bodyMedium(color: AppColors.textColorDark)),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          PopupMenuButton<String>(icon: const Icon(Icons.more_vert, color: Colors.white), onSelected: (value) { if (value == 'logout') { Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const HomePage()), (route) => false); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Başarıyla çıkış yapıldı.')));}}, itemBuilder: (context) => [PopupMenuItem<String>(value: 'logout', child: Row(children: [Icon(Icons.logout, color: AppColors.textColorDark), const SizedBox(width: 8), Text('Çıkış Yap', style: AppFonts.bodyMedium(color: AppColors.textColorDark))]))]),
         ],
       ),
     );
   }
 }
 
-// Bölüm Başlığı
 class SectionTitle extends StatelessWidget {
   final String title;
   const SectionTitle({super.key, required this.title});
-
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Text(title, style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorDark)),
-    );
+    return Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), child: Text(title, style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorDark)));
   }
 }
 
-// Ayırıcı Çizgi
 class SectionDivider extends StatelessWidget {
   const SectionDivider({super.key});
-
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-      child: Divider(color: AppColors.dividerColor, thickness: 1),
-    );
+    return Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0), child: Divider(color: AppColors.dividerColor, thickness: 1));
   }
 }
 
-// Salon listelerini oluşturan ana widget
 class SaloonList extends StatelessWidget {
   final List<SaloonModel> saloons;
   final bool hasCampaign;
@@ -210,14 +138,10 @@ class SaloonList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (saloons.isEmpty) {
-      return const SizedBox(
-        height: 100,
-        child: Center(child: Text("Bu kategoride salon bulunamadı.")),
-      );
+      return const SizedBox(height: 100, child: Center(child: Text("Bu kategoride salon bulunamadı.")));
     }
-
     return SizedBox(
-      height: 220,
+      height: 285,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -227,7 +151,7 @@ class SaloonList extends StatelessWidget {
           final serviceNames = salon.services.map((s) => s.serviceName).toList();
           return SalonCard(
             name: salon.saloonName,
-            rating: '4.8', // Bu ileride yorumlardan gelecek
+            rating: '4.8',
             services: serviceNames.isNotEmpty ? serviceNames : ["Hizmet Yok"],
             hasCampaign: hasCampaign,
           );

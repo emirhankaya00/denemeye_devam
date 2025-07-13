@@ -32,10 +32,12 @@ class DashboardViewModel extends ChangeNotifier {
     final results = await Future.wait([
       _repository.getNearbySaloons(),
       _repository.getTopRatedSaloons(),
+      _repository.getCampaignSaloons(), // <-- ÇAĞRIYI GERİ EKLEDİK
     ]);
 
     _nearbySaloons = results[0];
     _topRatedSaloons = results[1];
+    _campaignSaloons = results[2]; // <-- LİSTEYİ DOLDURUYORUZ
 
     _isLoading = false;
     notifyListeners();
