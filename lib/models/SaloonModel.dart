@@ -1,3 +1,4 @@
+import 'package:denemeye_devam/models/ServiceModel.dart'; // <-- ServiceModel'i import etmemiz gerekiyor!
 class SaloonModel {
   final String saloonId;
   final String? titlePhotoUrl;
@@ -10,6 +11,7 @@ class SaloonModel {
   final String? email;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<ServiceModel> services; // <-- 1. YENİ ALAN: Hizmet listesi
 
   SaloonModel({
     required this.saloonId,
@@ -23,6 +25,7 @@ class SaloonModel {
     this.email,
     required this.createdAt,
     required this.updatedAt,
+    this.services = const []
   });
 
   factory SaloonModel.fromJson(Map<String, dynamic> json) {
@@ -38,6 +41,22 @@ class SaloonModel {
       email: json['email'],
       createdAt: DateTime.tryParse(json['created_at']) ?? DateTime.now(),
       updatedAt: DateTime.tryParse(json['updated_at']) ?? DateTime.now(),
+      services: json['saloon_services'] != null
+          ? (json['saloon_services'] as List)
+      // Her bir 'saloon_service' kaydının içindeki 'services' nesnesini alıyoruz.
+          .map((saloonServiceJson) {
+        // Eğer içteki 'services' nesnesi null değilse, onu ServiceModel'e çevir.
+        if (saloonServiceJson['services'] != null) {
+          return ServiceModel.fromJson(saloonServiceJson['services']);
+        }
+        // Eğer bir şekilde null gelirse, bu adımı atla (null kontrolü)
+        return null;
+      })
+      // Listede oluşabilecek null değerleri temizle.
+          .where((service) => service != null)
+          .cast<ServiceModel>()
+          .toList()
+          : [], // Eğer 'saloon_services' listesi gelmezse, boş bir liste ata.
     );
   }
 

@@ -12,6 +12,14 @@ class DashboardViewModel extends ChangeNotifier {
   List<SaloonModel> _nearbySaloons = [];
   List<SaloonModel> get nearbySaloons => _nearbySaloons;
 
+  // --- YENİ LİSTELER EKLİYORUZ ---
+  List<SaloonModel> _topRatedSaloons = [];
+  List<SaloonModel> get topRatedSaloons => _topRatedSaloons;
+
+  List<SaloonModel> _campaignSaloons = [];
+  List<SaloonModel> get campaignSaloons => _campaignSaloons;
+
+
   DashboardViewModel() {
     fetchDashboardData();
   }
@@ -20,8 +28,14 @@ class DashboardViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    // Artık Repository'deki GERÇEK fonksiyonu çağırıyoruz.
-    _nearbySaloons = await _repository.getNearbySaloons();
+    // Tüm verileri aynı anda çekmek için Future.wait kullanabiliriz (daha verimli)
+    final results = await Future.wait([
+      _repository.getNearbySaloons(),
+      _repository.getTopRatedSaloons(),
+    ]);
+
+    _nearbySaloons = results[0];
+    _topRatedSaloons = results[1];
 
     _isLoading = false;
     notifyListeners();

@@ -5,29 +5,31 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SaloonRepository {
   final SupabaseClient _client;
   SaloonRepository(this._client);
-  // Yakındaki salonları getiren fonksiyon
-  Future<List<SaloonModel>> getNearbySaloons() async {
+
+  Future<List<SaloonModel>> _fetchSaloons(String query) async {
     try {
-      // 1. Supabase'deki 'saloons' tablosundan tüm veriyi (*) seç.
-      // .select() metodu List<Map<String, dynamic>> tipinde bir liste döndürür.
-      final List<Map<String, dynamic>> data = await _client.from('saloons').select('*, services(*)');
-
-      // 2. Gelen her bir Map'i (her bir salonun JSON verisi),
-      //    daha önce yazdığın SaloonModel.fromJson'ı kullanarak bir SaloonModel nesnesine çevir.
-      final saloons = data.map((item) => SaloonModel.fromJson(item)).toList();
-
-      // 3. Oluşturulan SaloonModel listesini geri döndür.
-      return saloons;
-
+      final List<Map<String, dynamic>> data = await _client.from('saloons').select(query);
+      return data.map((item) => SaloonModel.fromJson(item)).toList();
     } catch (e) {
-      // 4. Bir hata oluşursa, hatayı konsola yazdır ve boş bir liste döndür.
-      //    (Gerçek bir uygulamada burada daha detaylı bir hata yönetimi yapılır)
-      print('Salonları çekerken hata: $e');
+      // Hatayı daha detaylı görmek için konsola yazdır! Bu çok önemli!
+      print('Supabase sorgu hatası: $e');
       return [];
     }
   }
 
-// En yüksek puanlıları getirmek için de benzer bir fonksiyon yazabilirsin.
-// Örneğin, Supabase'de bir RPC (veritabanı fonksiyonu) yazıp onu çağırabilirsin.
-// Future<List<SaloonModel>> getTopRatedSaloons() async { ... }
+  // Sorguyu tek bir yerden yönetmek daha temiz.
+  static const String _saloonWithServicesQuery = '*, saloon_services(*, services(*))';
+
+  Future<List<SaloonModel>> getNearbySaloons() {
+    return _fetchSaloons(_saloonWithServicesQuery);
+  }
+
+  Future<List<SaloonModel>> getTopRatedSaloons() {
+    // order ve limit gibi eklemeleri burada yapabiliriz.
+    return _fetchSaloons('$_saloonWithServicesQuery, comments(rating)');
+  }
+
+  Future<List<SaloonModel>> getCampaignSaloons() {
+    return _fetchSaloons(_saloonWithServicesQuery);
+  }
 }
