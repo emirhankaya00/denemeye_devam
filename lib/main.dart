@@ -1,14 +1,32 @@
 // lib/main.dart
+import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:denemeye_devam/core/app_colors.dart'; // AppColors sınıfını import et
 import 'package:denemeye_devam/screens/root_screen.dart';
 import 'package:intl/date_symbol_data_local.dart'; // <-- intl için gerekli import
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() async { // <-- main fonksiyonu async yapıldı
+void main() async {
+  // <-- main fonksiyonu async yapıldı
   WidgetsFlutterBinding.ensureInitialized(); // <-- Flutter binding'in başlatıldığından emin ol
-  await initializeDateFormatting('tr', null); // <-- Türkçe yerel veri başlatıldı
+  await initializeDateFormatting(
+    'tr',
+    null,
+  ); // <-- Türkçe yerel veri başlatıldı
+  await Supabase.initialize(
+    // Supabase projenin API ayarlarından aldığın bilgileri buraya yapıştır
+    url: 'https://ndptlhgrilvxrxogzuyw.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kcHRsaGdyaWx2eHJ4b2d6dXl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5MjI3OTUsImV4cCI6MjA2NzQ5ODc5NX0.rhLSmN3BMgxovaOxOkUoTxSMaa-V3Nh_x9Hfv5B9aWA',
+  );
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => DashboardViewModel())],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
