@@ -9,7 +9,11 @@ import 'package:denemeye_devam/screens/dashboard_screen.dart';
 import 'package:denemeye_devam/features/appointments/screens/appointments_screen.dart'; // Doğru yol
 import 'package:denemeye_devam/screens/search_screen.dart'; // Doğru yol
 import 'package:denemeye_devam/screens/favorites_screen.dart'; // Doğru yol
-import 'package:denemeye_devam/screens/profile_screen.dart'; // <-- PROFİL SAYFASINI BURAYA EKLEDİK VE YOLU DÜZELTTİK!
+import 'package:denemeye_devam/screens/profile_screen.dart';
+import 'package:provider/provider.dart';
+
+import '../features/auth/screens/home_page.dart';
+import '../viewmodels/auth_viewmodel.dart'; // <-- PROFİL SAYFASINI BURAYA EKLEDİK VE YOLU DÜZELTTİK!
 
 class RootScreen extends StatefulWidget {
   const RootScreen({super.key});
@@ -38,6 +42,11 @@ class _RootScreenState extends State<RootScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authViewModel = Provider.of<AuthViewModel>(context);
+    if (authViewModel.user == null) {
+      return const HomePage();
+    }
+
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
