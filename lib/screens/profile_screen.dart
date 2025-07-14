@@ -11,18 +11,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColorLight, // Görseldeki açık gri arka plan
-      appBar: AppBar(
-        backgroundColor: AppColors.primaryColor, // Kırmızı AppBar rengi
-        elevation: 0, // Gölge yok
-        leading: IconButton( // Geri oku
-          icon: const Icon(Icons.arrow_back, color: Colors.white), // Beyaz geri oku
-          onPressed: () {
-            // Bir önceki sayfaya (muhtemelen Dashboard'a veya son kalınan yere) dön
-            Navigator.pop(context);
-          },
-        ),
-        // Görselde AppBar'da başlık metni yok, bu yüzden 'title' eklemiyoruz.
-      ),
+      // AppBar'ı buradan kaldırdık. Artık RootScreen'daki MainApp yönetecek.
       body: SingleChildScrollView( // İçerik uzun olursa kaydırılabilir olsun diye
         child: Padding(
           padding: const EdgeInsets.all(20.0), // Genel boşluk
@@ -40,7 +29,7 @@ class ProfileScreen extends StatelessWidget {
                     border: Border.all(color: Colors.white, width: 5), // Beyaz çerçeve (daha belirgin)
                     boxShadow: [ // Hafif bir gölge
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
+                        color: Colors.black.withOpacity(0.15), // withValues yerine withOpacity kullanıldı
                         blurRadius: 15,
                         offset: const Offset(0, 8),
                       ),

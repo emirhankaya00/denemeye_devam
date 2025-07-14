@@ -2,6 +2,7 @@
 import 'package:denemeye_devam/viewmodels/auth_viewmodel.dart';
 import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
 import 'package:denemeye_devam/viewmodels/favorites_viewmodel.dart';
+import 'package:denemeye_devam/viewmodels/search_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:denemeye_devam/core/app_colors.dart';
 import 'package:denemeye_devam/screens/root_screen.dart';
@@ -28,6 +29,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => DashboardViewModel()),
         ChangeNotifierProvider(create: (_) => FavoritesViewModel()),
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(create: (_) => SearchViewModel()),
       ],
       child: const MyApp(),
     ),

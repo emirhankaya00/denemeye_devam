@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:denemeye_devam/core/app_colors.dart';
 import 'package:denemeye_devam/core/app_fonts.dart'; // AppFonts'u import ettiğinizden emin olun!
 import 'package:denemeye_devam/features/common/widgets/salon_card.dart';
-// import 'package:denemeye_devam/screens/salon_detail_screen.dart'; // Bu import'a burada ihtiyaç yok, sadece Dashboard'dan geçiyoruz
+import 'package:provider/provider.dart'; // Provider paketi için
+import 'package:denemeye_devam/viewmodels/search_viewmodel.dart'; // SearchViewModel eklendi
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -12,37 +13,38 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final TextEditingController _searchController = TextEditingController();
+  // TextEditingController _searchController kaldırıldı, çünkü arama RootScreen'daki AppBar'dan yönetiliyor.
   List<Map<String, dynamic>> _searchResults = [];
   String? _selectedCategory;
   final List<String> _categories = ['Saç bakımı', 'Manikür', 'Cilt Bakımı', 'Masaj', 'Epilasyon', 'Makyaj'];
 
   final List<Map<String, dynamic>> _allSalons = [
-    {'name': 'Mustafa Güzellik Salonu 1', 'rating': '4.5', 'services': ['Saç Kesimi', 'Manikür', 'Tırnak Bakımı', 'Makyaj'], 'hasCampaign': false, 'address': 'Örnek Cad. No:1'},
-    {'name': 'Premium Salon 1', 'rating': '4.8', 'services': ['Spa', 'Masaj', 'Cilt Bakımı'], 'hasCampaign': false, 'address': 'Başka Sok. No:2'},
-    {'name': 'Fırsat Salonu 1', 'rating': '4.2', 'services': ['İndirimli Kesim', 'Saç Bakımı'], 'hasCampaign': true, 'address': 'Kampanya Yolu No:3'},
-    {'name': 'Deniz Kuaför', 'rating': '4.0', 'services': ['Saç Boyama', 'Saç Kesimi', 'Fön'], 'hasCampaign': false, 'address': 'Deniz Mah. No:4'},
-    {'name': 'Yıldız Güzellik', 'rating': '4.6', 'services': ['Manikür', 'Pedikür', 'Epilasyon', 'Cilt Bakımı'], 'hasCampaign': false, 'address': 'Yıldız Sk. No:5'},
-    {'name': 'Kampanyalı Saçlar', 'rating': '4.1', 'services': ['Fön', 'Özel Saç Bakımı', 'Saç Kesimi'], 'hasCampaign': true, 'address': 'İndirim Cad. No:6'},
+    {'name': 'Mustafa Güzellik Salonu 1', 'rating': '4.5', 'services': ['Saç Kesimi', 'Manikür', 'Tırnak Bakımı', 'Makyaj'], 'hasCampaign': false, 'address': 'Örnek Cad. No:1', 'id': 's1'},
+    {'name': 'Premium Salon 1', 'rating': '4.8', 'services': ['Spa', 'Masaj', 'Cilt Bakımı'], 'hasCampaign': false, 'address': 'Başka Sok. No:2', 'id': 's2'},
+    {'name': 'Fırsat Salonu 1', 'rating': '4.2', 'services': ['İndirimli Kesim', 'Saç Bakımı'], 'hasCampaign': true, 'address': 'Kampanya Yolu No:3', 'id': 's3'},
+    {'name': 'Deniz Kuaför', 'rating': '4.0', 'services': ['Saç Boyama', 'Saç Kesimi', 'Fön'], 'hasCampaign': false, 'address': 'Deniz Mah. No:4', 'id': 's4'},
+    {'name': 'Yıldız Güzellik', 'rating': '4.6', 'services': ['Manikür', 'Pedikür', 'Epilasyon', 'Cilt Bakımı'], 'hasCampaign': false, 'address': 'Yıldız Sk. No:5', 'id': 's5'},
+    {'name': 'Kampanyalı Saçlar', 'rating': '4.1', 'services': ['Fön', 'Özel Saç Bakımı', 'Saç Kesimi'], 'hasCampaign': true, 'address': 'İndirim Cad. No:6', 'id': 's6'},
   ];
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_onSearchChanged);
+    // _searchController.addListener(_onSearchChanged); // Kaldırıldı
     _searchResults = List.from(_allSalons); // Sayfa ilk açıldığında tüm salonları göster
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
+    // _searchController.removeListener(_onSearchChanged); // Kaldırıldı
+    // _searchController.dispose(); // Kaldırıldı
     super.dispose();
   }
 
-  void _onSearchChanged() {
-    _performSearch(_searchController.text);
-  }
+  // _onSearchChanged kaldırıldı
+  // void _onSearchChanged() {
+  //   _performSearch(_searchController.text);
+  // }
 
   void _performSearch(String query) {
     setState(() {
@@ -65,61 +67,26 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
+  // _clearSearch kaldırıldı, çünkü arama RootScreen'daki AppBar'dan yönetiliyor.
+  // void _clearSearch() {
+  //   setState(() {
+  //     _searchController.clear();
+  //     _selectedCategory = null;
+  //     _searchResults = List.from(_allSalons);
+  //   });
+  // }
+
   @override
   Widget build(BuildContext context) {
+    // SearchViewModel'ı dinleyerek arama sorgusunu alıyoruz
+    final searchViewModel = context.watch<SearchViewModel>();
+
+    // SearchViewModel'dan gelen sorguya göre filtreleme yap
+    _performSearch(searchViewModel.searchQuery);
+
     return Scaffold(
-      backgroundColor: AppColors.accentColor, // Ekranın genel arka plan rengi AppBar ile uyumlu olsun
-      appBar: AppBar(
-        backgroundColor: AppColors.primaryColor, // AppBar arka plan rengi
-        elevation: 0, // Gölge yok
-        toolbarHeight: 80.0, // Yüksekliği ayarla
-        leading: IconButton(
-          icon: Container(
-            decoration: BoxDecoration(
-              color: AppColors.textOnPrimary, // Beyaz arka plan
-              shape: BoxShape.circle,
-            ),
-            padding: const EdgeInsets.all(4.0), // Beyaz çemberin içi için boşluk
-            child: Icon(
-              Icons.arrow_back,
-              color: AppColors.primaryColor, // Geri ok rengi (kırmızıya yakın)
-              size: 20,
-            ),
-          ),
-          onPressed: () {
-            Navigator.pop(context); // Geri tuşu işlevi
-          },
-        ),
-        titleSpacing: 0, // Leading ile title arasındaki varsayılan boşluğu kaldır
-        title: Container(
-          height: 48.0, // Arama çubuğunun yüksekliği
-          margin: const EdgeInsets.only(right: 16.0), // Sağdan boşluk bırak
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12), // Arama çubuğu için yuvarlak köşeler
-          ),
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Salon veya hizmet ara...',
-              hintStyle: AppFonts.bodyMedium(color: AppColors.textColorLight), // app_fonts kullanıldı
-              prefixIcon: Icon(Icons.search, color: AppColors.textColorLight),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                icon: Icon(Icons.clear, color: AppColors.textColorLight),
-                onPressed: _clearSearch,
-              )
-                  : null,
-              border: InputBorder.none, // Varsayılan kenarlığı kaldır
-              contentPadding: const EdgeInsets.symmetric(vertical: 12.0), // Metnin dikey hizalamasını ayarla
-            ),
-            style: AppFonts.bodyMedium(color: AppColors.textColorDark), // app_fonts kullanıldı
-            onSubmitted: (query) {
-              _performSearch(query); // Enter'a basıldığında arama yap
-            },
-          ),
-        ),
-      ),
+      backgroundColor: AppColors.accentColor, // Ekranın genel arka plan rengi
+      // AppBar kaldırıldı, artık RootScreen'daki MainApp yönetecek.
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -138,7 +105,7 @@ class _SearchScreenState extends State<SearchScreen> {
               padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
               child: Text(
                 'Kategoriler',
-                style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorDark), // Font güncellendi
+                style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorDark),
               ),
             ),
             SizedBox(
@@ -158,7 +125,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       onSelected: (selected) {
                         setState(() {
                           _selectedCategory = selected ? category : null;
-                          _performSearch(_searchController.text);
+                          // Kategori değiştiğinde de arama yap
+                          _performSearch(searchViewModel.searchQuery);
                         });
                       },
                       selectedColor: AppColors.accentColor,
@@ -167,11 +135,11 @@ class _SearchScreenState extends State<SearchScreen> {
                         color: isSelected ? Colors.white : AppColors.textColorDark,
                       ).copyWith(
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ), // Font güncellendi
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                         side: BorderSide(
-                          color: isSelected ? AppColors.accentColor : AppColors.dividerColor.withValues(alpha: 0.5),
+                          color: isSelected ? AppColors.accentColor : AppColors.dividerColor.withOpacity(0.5), // withValues yerine withOpacity kullanıldı
                         ),
                       ),
                       elevation: isSelected ? 3 : 1,
@@ -182,39 +150,31 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             const SizedBox(height: 10),
             Expanded(
-              child: _searchResults.isEmpty && (_searchController.text.isNotEmpty || _selectedCategory != null)
-                  ? _buildNoResultsFound()
+              child: _searchResults.isEmpty && (searchViewModel.searchQuery.isNotEmpty || _selectedCategory != null)
+                  ? _buildNoResultsFound(searchViewModel.searchQuery.isNotEmpty)
                   : _buildSearchResultsList(),
             ),
-            // Bottom Nav Bar KALDIRILDI!
+            // Bottom Nav Bar zaten RootScreen'da yönetiliyor!
           ],
         ),
       ),
     );
   }
 
-  void _clearSearch() {
-    setState(() {
-      _searchController.clear();
-      _selectedCategory = null;
-      _searchResults = List.from(_allSalons);
-    });
-  }
-
-  Widget _buildNoResultsFound() {
+  Widget _buildNoResultsFound(bool isSearching) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 80, color: AppColors.textColorLight.withValues(alpha: 0.5)),
+          Icon(Icons.search_off, size: 80, color: AppColors.textColorLight.withOpacity(0.5)), // withValues yerine withOpacity kullanıldı
           const SizedBox(height: 20),
           Text(
-            'Sonuç bulunamadı.',
-            style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorLight.withValues(alpha: 0.8)), // Font güncellendi
+            isSearching ? 'Arama sonucunuz bulunamadı.' : 'Salon bulunamadı.',
+            style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorLight.withOpacity(0.8)), // withValues yerine withOpacity kullanıldı
           ),
           Text(
             'Farklı bir kelime veya kategoriyle arama yapmayı deneyin.',
-            style: AppFonts.bodyMedium(color: AppColors.textColorLight.withValues(alpha: 0.6)), // Font güncellendi
+            style: AppFonts.bodyMedium(color: AppColors.textColorLight.withOpacity(0.6)), // withValues yerine withOpacity kullanıldı
           ),
         ],
       ),
@@ -235,7 +195,7 @@ class _SearchScreenState extends State<SearchScreen> {
             rating: salonData['rating'],
             services: List<String>.from(salonData['services']),
             hasCampaign: salonData['hasCampaign'],
-            // imagePath: 'lib/assets/salon_placeholder.png',
+            // imagePath: 'lib/assets/salon_placeholder.png', // Eğer imagePath'iniz sabitse veya modelden gelmiyorsa
           ),
         );
       },
