@@ -1,4 +1,5 @@
 // lib/main.dart
+import 'package:denemeye_devam/viewmodels/auth_viewmodel.dart';
 import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
 import 'package:denemeye_devam/viewmodels/favorites_viewmodel.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +18,8 @@ void main() async {
   await initializeDateFormatting('tr', null);
   await Supabase.initialize(
     url: 'https://ndptlhgrilvxrxogzuyw.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kcHRsaGdyaWx2eHJ4b2d6dXl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5MjI3OTUsImV4cCI6MjA2NzQ5ODc5NX0.rhLSmN3BMgxovaOxOkUoTxSMaa-V3Nh_x9Hfv5B9aWA',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kcHRsaGdyaWx2eHJ4b2d6dXl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5MjI3OTUsImV4cCI6MjA2NzQ5ODc5NX0.rhLSmN3BMgxovaOxOkUoTxSMaa-V3Nh_x9Hfv5B9aWA',
   );
 
   runApp(
@@ -25,8 +27,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => DashboardViewModel()),
         ChangeNotifierProvider(create: (_) => FavoritesViewModel()),
-        // Eğer AuthViewModel'ın varsa buraya ekle:
-        // ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(create: (_) => AuthViewModel()),
       ],
       child: const MyApp(),
     ),
