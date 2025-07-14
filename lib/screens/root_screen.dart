@@ -23,7 +23,7 @@ class _RootScreenState extends State<RootScreen> {
 
   // Alt navigasyon barında gösterilecek ekranların listesi
   static final List<Widget> _pages = <Widget>[
-    const DashboardScreen(),
+    const  DashboardScreen(),
     const AppointmentsScreen(),
     const SearchScreen(),
     const FavoritesScreen(),

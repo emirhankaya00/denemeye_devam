@@ -3,7 +3,8 @@ import 'package:denemeye_devam/features/common/widgets/my_button.dart';
 import 'package:denemeye_devam/features/common/widgets/custom_text_field.dart';
 import 'package:denemeye_devam/core/app_colors.dart';
 import 'package:denemeye_devam/features/common/widgets/custom_card.dart';
-import 'package:denemeye_devam/screens/dashboard_screen.dart'; // DashboardScreen'ı import et!
+import 'package:denemeye_devam/screens/root_screen.dart'; // <-- RootScreen'i buraya import ettik!
+// import 'package:denemeye_devam/screens/dashboard_screen.dart'; // DashboardScreen import'ına artık burada ihtiyacımız yoktu, kaldırdık.
 
 
 class HomePage extends StatefulWidget {
@@ -103,11 +104,12 @@ class _HomePageState extends State<HomePage> {
                         ),
                       );
 
-                      // DashboardScreen'a geçiş yap!
-                      Navigator.push(
+                      // DashboardScreen yerine RootScreen'a geçiş yapıyoruz!
+                      // pushReplacement kullanarak, kullanıcının login sonrası geri tuşuyla geri dönmesini engelledik.
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const DashboardScreen(),
+                          builder: (context) => const RootScreen(), // <-- İşte burada RootScreen'e gidiyoruz!
                         ),
                       );
                     },
