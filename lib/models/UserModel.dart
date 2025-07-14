@@ -4,6 +4,7 @@ class UserModel {
   final String id;
   final String name;
   final String surname;
+  final String email;
   final String? displayName;
   final String? profilePhotoUrl;
   final String? phoneNumber;
@@ -16,6 +17,7 @@ class UserModel {
     required this.id,
     required this.name,
     required this.surname,
+    required this.email,
     this.displayName,
     this.profilePhotoUrl,
     this.phoneNumber,
@@ -30,6 +32,7 @@ class UserModel {
       id: json['id'] as String,
       name: json['name'] as String,
       surname: json['surname'] as String,
+      email: json['email'] as String,
       displayName: json['display_name'],
       profilePhotoUrl: json['profile_photo_url'],
       phoneNumber: json['phone_number'],
@@ -45,6 +48,7 @@ class UserModel {
       'id': id,
       'name': name,
       'surname': surname,
+      'email': email,
       'display_name': displayName,
       'profile_photo_url': profilePhotoUrl,
       'phone_number': phoneNumber,
