@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:denemeye_devam/core/app_colors.dart';
 import 'package:denemeye_devam/core/app_fonts.dart'; // AppFonts'u import ettiğinizden emin olun!
-
-// import 'package:denemeye_devam/widgets/salon_card.dart'; // Eğer SalonCard'a benzer bir yapı kullanacaksak
+import 'package:provider/provider.dart'; // Provider paketi için
+import 'package:denemeye_devam/viewmodels/search_viewmodel.dart'; // SearchViewModel eklendi
 
 class Appointment {
   final String salonName;
@@ -32,7 +32,7 @@ class AppointmentsScreen extends StatefulWidget {
 }
 
 class _AppointmentsScreenState extends State<AppointmentsScreen> {
-  final TextEditingController _searchController = TextEditingController();
+  // TextEditingController _searchController kaldırıldı, çünkü arama RootScreen'daki AppBar'dan yönetiliyor.
 
   // Örnek randevu verileri
   final List<Appointment> _allAppointments = [
@@ -83,44 +83,51 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     ),
   ];
 
-  List<Appointment> _filteredAppointments = [];
+  // _filteredAppointments artık build metodu içinde dinamik olarak oluşturulacak
+  // List<Appointment> _filteredAppointments = [];
 
   @override
   void initState() {
     super.initState();
-    _filteredAppointments = List.from(_allAppointments); // Başlangıçta tüm randevuları göster
-    _searchController.addListener(_onSearchChanged);
+    // _filteredAppointments = List.from(_allAppointments); // Artık gerek yok, Consumer içinde filtreleyeceğiz
+    // _searchController.addListener(_onSearchChanged); // Kaldırıldı
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
+    // _searchController.removeListener(_onSearchChanged); // Kaldırıldı
+    // _searchController.dispose(); // Kaldırıldı
     super.dispose();
   }
 
-  void _onSearchChanged() {
-    _filterAppointments(_searchController.text);
-  }
+  // _onSearchChanged kaldırıldı
+  // void _onSearchChanged() {
+  //   _filterAppointments(_searchController.text);
+  // }
 
-  void _filterAppointments(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredAppointments = List.from(_allAppointments);
-      } else {
-        _filteredAppointments = _allAppointments.where((appointment) {
-          final String lowerCaseQuery = query.toLowerCase();
-          return appointment.salonName.toLowerCase().contains(lowerCaseQuery) ||
-              appointment.service.toLowerCase().contains(lowerCaseQuery);
-        }).toList();
-      }
-    });
-  }
+  // _filterAppointments metodu da artık doğrudan SearchViewModel'dan gelen sorguyu alacak
+  // void _filterAppointments(String query) {
+  //   setState(() {
+  //     if (query.isEmpty) {
+  //       _filteredAppointments = List.from(_allAppointments);
+  //     } else {
+  //       _filteredAppointments = _allAppointments.where((appointment) {
+  //         final String lowerCaseQuery = query.toLowerCase();
+  //         return appointment.salonName.toLowerCase().contains(lowerCaseQuery) ||
+  //             appointment.service.toLowerCase().contains(lowerCaseQuery);
+  //       }).toList();
+  //     }
+  //   });
+  // }
 
   void _cancelAppointment(Appointment appointment) {
     setState(() {
       _allAppointments.remove(appointment);
-      _filterAppointments(_searchController.text); // Listeyi yeniden filtrele
+      // Listeyi yeniden filtrelemek için SearchViewModel'dan mevcut sorguyu al
+      final currentSearchQuery = Provider.of<SearchViewModel>(context, listen: false).searchQuery;
+      // Not: Bu kısımda normalde bir ViewModel'a taşınmış olsaydı, _allAppointments
+      // direkt ViewModel içinde yönetilirdi ve burada sadece ViewModel'daki
+      // bir metot çağrılırdı. Şimdilik bu setState yeterli.
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${appointment.salonName} için randevu iptal edildi.')),
@@ -128,11 +135,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   }
 
   void _rebookAppointment(Appointment appointment) {
-    // Burada randevuyu yeniden oluşturma (örneğin yeni bir sayfaya yönlendirme) mantığı eklenebilir
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${appointment.salonName} için randevu yeniden oluşturuluyor.')),
     );
-    // Örnek olarak, randevuyu tekrar gelecek randevulara ekleyebiliriz (şimdilik basit bir simülasyon)
     setState(() {
       _allAppointments.add(Appointment(
         salonName: appointment.salonName,
@@ -143,74 +148,36 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         isUpcoming: true,
         canCancel: true,
       ));
-      _filterAppointments(_searchController.text);
+      // Yeniden rezervasyon sonrası da filtrelemeyi tetikle
+      final currentSearchQuery = Provider.of<SearchViewModel>(context, listen: false).searchQuery;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<Appointment> upcomingAppointments = _filteredAppointments
+    // SearchViewModel'ı dinleyerek arama sorgusunu alıyoruz
+    final searchViewModel = context.watch<SearchViewModel>();
+
+    // Arama sorgusuna göre randevuları filtrele
+    final List<Appointment> filteredAppointments = searchViewModel.searchQuery.isEmpty
+        ? _allAppointments
+        : _allAppointments.where((appointment) {
+      final String lowerCaseQuery = searchViewModel.searchQuery.toLowerCase();
+      return appointment.salonName.toLowerCase().contains(lowerCaseQuery) ||
+          appointment.service.toLowerCase().contains(lowerCaseQuery);
+    }).toList();
+
+    final List<Appointment> upcomingAppointments = filteredAppointments
         .where((a) => a.isUpcoming)
         .toList();
-    final List<Appointment> pastAppointments = _filteredAppointments
+    final List<Appointment> pastAppointments = filteredAppointments
         .where((a) => !a.isUpcoming)
         .toList();
 
     return Scaffold(
-      backgroundColor: AppColors.accentColor, // Ekranın genel arka plan rengi AppBar ile uyumlu olsun
-      appBar: AppBar(
-        backgroundColor: AppColors.primaryColor, // AppBar arka plan rengi
-        elevation: 0, // Gölge yok
-        toolbarHeight: 80.0, // Yüksekliği ayarla
-        leading: IconButton(
-          icon: Container(
-            decoration: BoxDecoration(
-              color: AppColors.textOnPrimary, // Beyaz arka plan
-              shape: BoxShape.circle,
-            ),
-            padding: const EdgeInsets.all(4.0), // Beyaz çemberin içi için boşluk
-            child: Icon(
-              Icons.arrow_back,
-              color: AppColors.primaryColor, // Geri ok rengi (kırmızıya yakın)
-              size: 20,
-            ),
-          ),
-          onPressed: () {
-            Navigator.pop(context); // Geri tuşu işlevi
-          },
-        ),
-        titleSpacing: 0, // Leading ile title arasındaki varsayılan boşluğu kaldır
-        title: Container(
-          height: 48.0, // Arama çubuğunun yüksekliği
-          margin: const EdgeInsets.only(right: 16.0), // Sağdan boşluk bırak
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12), // Arama çubuğu için yuvarlak köşeler
-          ),
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Randevu ara...',
-              hintStyle: AppFonts.bodyMedium(color: AppColors.textColorLight), // app_fonts kullanıldı
-              prefixIcon: Icon(Icons.search, color: AppColors.textColorLight),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                icon: Icon(Icons.clear, color: AppColors.textColorLight),
-                onPressed: () {
-                  _searchController.clear();
-                  _filterAppointments('');
-                },
-              )
-                  : null,
-              border: InputBorder.none, // Varsayılan kenarlığı kaldır
-              contentPadding: const EdgeInsets.symmetric(vertical: 12.0), // Metnin dikey hizalamasını ayarla
-            ),
-            style: AppFonts.bodyMedium(color: AppColors.textColorDark), // app_fonts kullanıldı
-          ),
-        ),
-      ),
+      backgroundColor: AppColors.accentColor, // Ekranın genel arka plan rengi
+      // AppBar'ı buradan kaldırdık. Artık RootScreen'daki MainApp yönetecek.
       body: Container(
-        // Bu kısım zaten güzel, sadece arka plan renklerini app_colors'tan çekmek daha iyi
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -229,11 +196,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
               // Gelecek Randevularım Bölümü
               Text(
                 'Gelecek Randevularım',
-                style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorDark), // Font güncellendi
+                style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorDark),
               ),
               const SizedBox(height: 10),
               upcomingAppointments.isEmpty
-                  ? _buildNoAppointmentsMessage('Yaklaşan randevunuz bulunmamaktadır.')
+                  ? _buildNoAppointmentsMessage('Yaklaşan randevunuz bulunmamaktadır.', searchViewModel.searchQuery.isNotEmpty)
                   : ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(), // Kaydırmayı engelle
@@ -247,11 +214,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
               // Geçmiş Randevularım Bölümü
               Text(
                 'Geçmiş Randevularım',
-                style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorDark), // Font güncellendi
+                style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorDark),
               ),
               const SizedBox(height: 10),
               pastAppointments.isEmpty
-                  ? _buildNoAppointmentsMessage('Geçmiş randevunuz bulunmamaktadır.')
+                  ? _buildNoAppointmentsMessage('Geçmiş randevunuz bulunmamaktadır.', searchViewModel.searchQuery.isNotEmpty)
                   : ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(), // Kaydırmayı engelle
@@ -277,7 +244,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.1), // withValues yerine withOpacity kullanıldı
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -292,7 +259,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             width: 70, // Görseldeki gibi biraz daha büyük
             height: 70, // Görseldeki gibi biraz daha büyük
             decoration: BoxDecoration(
-              color: AppColors.primaryColor.withValues(alpha: 0.8), // Placeholder renk
+              color: AppColors.primaryColor.withOpacity(0.8), // withValues yerine withOpacity kullanıldı
               borderRadius: BorderRadius.circular(15), // Daha yuvarlak köşeler
             ),
             child: const Center(
@@ -311,7 +278,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     Expanded( // Salon adının taşmasını engelle
                       child: Text(
                         appointment.salonName,
-                        style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorDark), // Font güncellendi
+                        style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorDark),
                         overflow: TextOverflow.ellipsis, // Taşma durumunda ... göster
                         maxLines: 1, // Tek satırda kalmasını sağla
                       ),
@@ -362,7 +329,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                   children: [
                     Text(
                       'Yapılacak İşlem: ',
-                      style: AppFonts.bodySmall(color: AppColors.textColorLight), // Font güncellendi
+                      style: AppFonts.bodySmall(color: AppColors.textColorLight),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -372,7 +339,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                       ),
                       child: Text(
                         appointment.service,
-                        style: AppFonts.bodySmall(color: Colors.white), // Font güncellendi
+                        style: AppFonts.bodySmall(color: Colors.white),
                       ),
                     ),
                   ],
@@ -391,7 +358,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     const SizedBox(width: 5),
                     Text(
                       '${appointment.rating}',
-                      style: AppFonts.bodySmall(color: AppColors.textColorLight), // Font güncellendi
+                      style: AppFonts.bodySmall(color: AppColors.textColorLight),
                     ),
                   ],
                 ),
@@ -400,7 +367,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Tarih: ${appointment.date} Saat: ${appointment.time}',
-                    style: AppFonts.bodyMedium(color: AppColors.textColorLight), // Font güncellendi
+                    style: AppFonts.bodyMedium(color: AppColors.textColorLight),
                   ),
                 ],
               ],
@@ -411,19 +378,25 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     );
   }
 
-  Widget _buildNoAppointmentsMessage(String message) {
+  Widget _buildNoAppointmentsMessage(String message, bool isSearching) {
     return Container(
       padding: const EdgeInsets.all(20),
       margin: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.cardColor.withValues(alpha: 0.8),
+        color: AppColors.cardColor.withOpacity(0.8), // withValues yerine withOpacity kullanıldı
         borderRadius: BorderRadius.circular(15),
       ),
       child: Center(
-        child: Text(
-          message,
-          style: AppFonts.bodyMedium(color: AppColors.textColorLight), // Font güncellendi
-          textAlign: TextAlign.center,
+        child: Column(
+          children: [
+            Icon(isSearching ? Icons.search_off : Icons.event_busy, size: 80, color: AppColors.textColorLight.withAlpha(128)),
+            const SizedBox(height: 20),
+            Text(
+              message,
+              style: AppFonts.bodyMedium(color: AppColors.textColorLight),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
