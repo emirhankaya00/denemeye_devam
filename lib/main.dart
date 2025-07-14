@@ -2,23 +2,20 @@
 import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
 import 'package:denemeye_devam/viewmodels/favorites_viewmodel.dart';
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/core/app_colors.dart'; // AppColors sınıfını import et
+import 'package:denemeye_devam/core/app_colors.dart';
 import 'package:denemeye_devam/screens/root_screen.dart';
-import 'package:intl/date_symbol_data_local.dart'; // <-- intl için gerekli import
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'features/auth/screens/home_page.dart';
+// Eğer bir AuthViewModel'ın varsa onu da import et
+// import 'package:denemeye_devam/viewmodels/auth_viewmodel.dart';
 
 void main() async {
-  // <-- main fonksiyonu async yapıldı
-  WidgetsFlutterBinding.ensureInitialized(); // <-- Flutter binding'in başlatıldığından emin ol
-  await initializeDateFormatting(
-    'tr',
-    null,
-  ); // <-- Türkçe yerel veri başlatıldı
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('tr', null);
   await Supabase.initialize(
-    // Supabase projenin API ayarlarından aldığın bilgileri buraya yapıştır
     url: '',
     anonKey: '',
   );
@@ -28,6 +25,8 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => DashboardViewModel()),
         ChangeNotifierProvider(create: (_) => FavoritesViewModel()),
+        // Eğer AuthViewModel'ın varsa buraya ekle:
+        // ChangeNotifierProvider(create: (_) => AuthViewModel()),
       ],
       child: const MyApp(),
     ),
@@ -39,6 +38,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Supabase oturumunu kontrol et
+    final session = Supabase.instance.client.auth.currentSession;
+    final bool isLoggedIn = session != null;
+
     return MaterialApp(
       title: 'Salon Uygulaması',
       debugShowCheckedModeBanner: false,
@@ -50,7 +53,11 @@ class MyApp extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
       ),
-      home: const HomePage(),
+      // Kullanıcı giriş yaptıysa RootScreen'e, yapmadıysa HomePage'e git.
+      // Bu, uygulamanın ilk açılışında doğru ekranı göstermesini sağlar.
+      home: isLoggedIn ? const RootScreen() : const HomePage(),
+      // Veya direkt olarak HomePage() ile başlayıp, HomePage içinde kontrolü yapabilirsin.
+      // home: const HomePage(),
     );
   }
 }
