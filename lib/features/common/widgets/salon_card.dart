@@ -4,6 +4,7 @@ import 'package:denemeye_devam/core/app_colors.dart';
 import 'package:denemeye_devam/features/appointments/screens/salon_detail_screen.dart'; // Yeni detay sayfamızı import ettik
 
 class SalonCard extends StatelessWidget {
+  final String salonId;
   final String name;
   final String rating;
   final List<String> services;
@@ -12,6 +13,7 @@ class SalonCard extends StatelessWidget {
 
   const SalonCard({
     super.key,
+    required this.salonId,
     required this.name,
     required this.rating,
     required this.services,
@@ -27,7 +29,7 @@ class SalonCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => SalonDetailScreen(salonName: name),
+            builder: (context) => SalonDetailScreen(salonId: salonId),
           ),
         );
       },

@@ -1,7 +1,6 @@
 import 'package:denemeye_devam/core/app_colors.dart';
 import 'package:denemeye_devam/core/app_fonts.dart';
 import 'package:denemeye_devam/features/appointments/screens/appointments_screen.dart';
-import 'package:denemeye_devam/features/auth/screens/home_page.dart';
 import 'package:denemeye_devam/features/common/widgets/salon_card.dart';
 import 'package:denemeye_devam/models/SaloonModel.dart';
 import 'package:denemeye_devam/screens/favorites_screen.dart';
@@ -251,6 +250,7 @@ class SaloonList extends StatelessWidget {
               .map((s) => s.serviceName)
               .toList();
           return SalonCard(
+            salonId: salon.saloonId,
             name: salon.saloonName,
             rating: '4.8',
             services: serviceNames.isNotEmpty ? serviceNames : ["Hizmet Yok"],

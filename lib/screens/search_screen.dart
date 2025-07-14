@@ -230,6 +230,7 @@ class _SearchScreenState extends State<SearchScreen> {
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: SalonCard(
+            salonId: salonData['id'] ?? '',
             name: salonData['name'],
             rating: salonData['rating'],
             services: List<String>.from(salonData['services']),
