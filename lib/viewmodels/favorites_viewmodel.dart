@@ -1,59 +1,92 @@
-import 'package:denemeye_devam/models/FavouriteModel.dart';
-import 'package:denemeye_devam/models/UserModel.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/SaloonModel.dart';
+import 'package:denemeye_devam/models/SaloonModel.dart';
 import 'package:denemeye_devam/repositories/favorites_repository.dart';
-import '../repositories/saloon_repository.dart';
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../features/appointments/screens/salon_detail_screen.dart';
 
 class FavoritesViewModel extends ChangeNotifier {
-  final FavoritesRepository _repository = FavoritesRepository(
-    Supabase.instance.client,
-  );
-  final currentUser = Supabase.instance.client.auth.currentUser;
+  final FavoritesRepository _repository = FavoritesRepository(Supabase.instance.client);
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  // Arayüzde gösterilecek olan, SaloonModel tipindeki listeler
   List<SaloonModel> _favoriteSaloons = [];
   List<SaloonModel> get favoriteSaloons => _favoriteSaloons;
 
-  List<SaloonModel> _filteredFavoriteSaloons = [];
-  List<SaloonModel> get filteredFavoriteSaloons => _filteredFavoriteSaloons;
+  // Hızlı kontrol için sadece favori salonların ID'lerini tutan set
+  Set<String> _favoriteSaloonIds = {};
 
+  // ViewModel oluşturulduğunda favorileri çekmesi için constructor'a ekliyoruz.
+  FavoritesViewModel() {
+    fetchFavoriteSaloons();
+  }
+
+  /// Veritabanından kullanıcının favori salonlarını çeker ve state'i günceller.
   Future<void> fetchFavoriteSaloons() async {
     _isLoading = true;
     notifyListeners();
-    final currentUser = _repository.getCurrentUserId();
-    if (currentUser != null) {
-      final fetchedSaloons = await _repository.getFavoriteSaloons(currentUser);
+
+
+    final currentUserId = _repository.getCurrentUserId();
+
+    if (currentUserId != null) {
+      // 1. Veritabanından FavouriteModel listesini çek.
+      final favouriteModels = await _repository.getFavoriteSaloons(currentUserId);
+
+      // 2. Bu listenin içindeki SaloonModel'leri ayıklayıp yeni bir liste oluştur.
+      final saloons = favouriteModels
+          .where((fav) => fav.saloon != null) // Sadece salonu olan favorileri al (güvenlik önlemi)
+          .map((fav) => fav.saloon!)         // İçindeki SaloonModel'i çıkar
+          .toList();
+
+      // 3. Oluşturduğun bu temiz SaloonModel listesini ve ID set'ini state değişkenlerine ata.
+      _favoriteSaloons = saloons;
+      _favoriteSaloonIds = saloons.map((s) => s.saloonId).toSet();
+
     } else {
-      // Eğer kullanıcı yoksa listeleri boşalt
+      // Kullanıcı giriş yapmamışsa listeleri boşalt.
       _favoriteSaloons = [];
-      _filteredFavoriteSaloons = [];
+      _favoriteSaloonIds = {};
     }
+
     _isLoading = false;
     notifyListeners();
   }
 
-  void searchFavorites(String query) {
-    if (query.isEmpty) {
-      _filteredFavoriteSaloons = _favoriteSaloons;
+  /// Verilen salon ID'sinin favorilerde olup olmadığını anında kontrol eder.
+  bool isSalonFavorite(String salonId) {
+    return _favoriteSaloonIds.contains(salonId);
+  }
+
+  /// Bir salonun favori durumunu değiştirir (ekler veya çıkarır).
+  /// Bu, tüm favori işlemlerinin yönetildiği merkezi fonksiyondur.
+  Future<void> toggleFavorite(String salonId, {SaloonModel? salon}) async {
+    if (isSalonFavorite(salonId)) {
+      // Favoriden Çıkar
+      await _repository.removeFavorite(salonId);
+      _favoriteSaloons.removeWhere((s) => s.saloonId == salonId);
+      _favoriteSaloonIds.remove(salonId);
     } else {
-      _filteredFavoriteSaloons = _favoriteSaloons.where((salon) {
-        return salon.saloonName.toLowerCase().contains(query.toLowerCase());
-      }).toList();
+      // Favoriye Ekle
+      await _repository.addFavorite(salonId);
+      _favoriteSaloonIds.add(salonId);
+      // Eğer salon bilgisi de verildiyse, listeye ekleyerek arayüzün anında güncellenmesini sağla
+      if (salon != null) {
+        _favoriteSaloons.insert(0, salon);
+      }
     }
+    // Değişiklik sonrası tüm dinleyicilere haber ver!
     notifyListeners();
   }
 
-  Future<void> removeFavorite(String salonId) async {
-    await _repository.removeFavorite(salonId);
-    await fetchFavoriteSaloons();
-  }
-
-  Future<void> bookAppointment(BuildContext context, SaloonModel salon) async {
-    await _repository.addFavorite(salon.saloonId);
-    await fetchFavoriteSaloons();
+  /// Bir salona tıklandığında detay sayfasına yönlendirme yapan fonksiyon.
+  void navigateToSalonDetail(BuildContext context, SaloonModel salon) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SalonDetailScreen(salonId: salon.saloonId),
+      ),
+    );
   }
 }
