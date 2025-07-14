@@ -1,6 +1,7 @@
-import 'package:denemeye_devam/main.dart'; // supabase client'ına erişmek için
 import 'package:denemeye_devam/models/SaloonModel.dart'; // Veriyi bu modele çevireceğiz
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../models/PersonalModel.dart';
 
 class SaloonRepository {
   final SupabaseClient _client;
@@ -31,5 +32,36 @@ class SaloonRepository {
 
   Future<List<SaloonModel>> getCampaignSaloons() {
     return _fetchSaloons(_saloonWithServicesQuery);
+  }
+  // Belirli bir salonu ID'sine göre tüm detaylarıyla getiren fonksiyon
+  Future<SaloonModel?> getSaloonById(String salonId) async {
+    try {
+      // İlişkili tabloları da (*) ile çekiyoruz: hizmetler ve yorumlar
+      final response = await _client
+          .from('saloons')
+          .select('*, saloon_services(*, services(*)), comments(*)')
+          .eq('saloon_id', salonId)
+          .single(); // Tek bir kayıt döneceği için .single() kullanıyoruz.
+
+      return SaloonModel.fromJson(response);
+    } catch (e) {
+      print('getSaloonById Hata: $e');
+      return null;
+    }
+  }
+
+  // Bir salona bağlı tüm çalışanları getiren fonksiyon
+  Future<List<PersonalModel>> getEmployeesBySaloon(String salonId) async {
+    try {
+      final response = await _client
+          .from('personals')
+          .select('*')
+          .eq('saloon_id', salonId);
+
+      return response.map((item) => PersonalModel.fromJson(item)).toList();
+    } catch (e) {
+      print('getEmployeesBySaloon Hata: $e');
+      return [];
+    }
   }
 }
