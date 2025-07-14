@@ -35,8 +35,8 @@ class PersonalModel {
       profilePhotoUrl: json['profile_photo_url'],
       phoneNumber: json['phone_number'],
       email: json['email'],
-      createdAt: DateTime.tryParse(json['created_at' ?? '']) ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at' ?? '']) ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']) ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at']) ?? DateTime.now(),
     );
   }
 
