@@ -71,6 +71,8 @@ flutter: # Bu ilk 'flutter:' bloğu
         - asset: assets/fonts/Montserrat-Regular.ttf
         - asset: assets/fonts/Montserrat-Bold.ttf
           weight: 700
+  assets:
+    - assets/map_placeholder.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
