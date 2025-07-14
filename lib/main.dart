@@ -1,11 +1,14 @@
 // lib/main.dart
 import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
+import 'package:denemeye_devam/viewmodels/favorites_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:denemeye_devam/core/app_colors.dart'; // AppColors sınıfını import et
 import 'package:denemeye_devam/screens/root_screen.dart';
 import 'package:intl/date_symbol_data_local.dart'; // <-- intl için gerekli import
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'features/auth/screens/home_page.dart';
 
 void main() async {
   // <-- main fonksiyonu async yapıldı
@@ -23,7 +26,10 @@ void main() async {
 
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => DashboardViewModel())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => DashboardViewModel()),
+        ChangeNotifierProvider(create: (_) => FavoritesViewModel()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -45,7 +51,7 @@ class MyApp extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
       ),
-      home: const RootScreen(),
+      home: const HomePage(),
     );
   }
 }
