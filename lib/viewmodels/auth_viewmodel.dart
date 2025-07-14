@@ -1,28 +1,22 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:denemeye_devam/repositories/auth_repository.dart';
 
 class AuthViewModel extends ChangeNotifier {
-  late final AuthRepository _repository;
   late final StreamSubscription<AuthState> _authStateSubscription;
 
   User? _user;
   User? get user => _user;
 
   AuthViewModel() {
-    // Repository'yi başlat
-    _repository = AuthRepository(Supabase.instance.client);
-    // O anki kullanıcıyı al
-    _user = _repository.currentUser;
-    // Auth durumunu dinlemeye başla
-    _authStateSubscription = _repository.authStateChanges.listen((data) {
-      _user = data.session?.user;
-      notifyListeners(); // Kullanıcı durumu değiştiğinde (giriş/çıkış) dinleyicileri uyar
-    });
+    _user = Supabase.instance.client.auth.currentUser;
+    _authStateSubscription =
+        Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+          _user = data.session?.user;
+          notifyListeners();
+        });
   }
 
-  // ViewModel temizlendiğinde Stream'i kapat (hafıza sızıntısını önlemek için önemli)
   @override
   void dispose() {
     _authStateSubscription.cancel();
@@ -30,14 +24,39 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<void> signIn(String email, String password) async {
-    await _repository.signIn(email, password);
+    try {
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  Future<void> signUp(String email, String password) async {
-    await _repository.signUp(email, password);
+  // --- BU FONKSİYON GÜNCELLENDİ ---
+  Future<void> signUp({
+    required String email,
+    required String password,
+    required String name,
+    required String surname,
+  }) async {
+    try {
+      await Supabase.instance.client.auth.signUp(
+        email: email,
+        password: password,
+        data: {
+          'name': name,
+          'surname': surname,
+        },
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
+  // ------------------------------
 
   Future<void> signOut() async {
-    await _repository.signOut();
+    await Supabase.instance.client.auth.signOut();
   }
 }
