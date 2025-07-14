@@ -42,7 +42,7 @@ class AppFonts {
     );
   }
 
-  static TextStyle bodyMedium({Color? color}) {
+  static TextStyle bodyMedium({Color? color,FontWeight? fontWeight}) {
     return TextStyle(
       fontFamily: montserrat,
       fontSize: 14,
