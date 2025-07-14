@@ -1,4 +1,5 @@
 // lib/main.dart
+import 'package:denemeye_devam/viewmodels/auth_viewmodel.dart';
 import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
 import 'package:denemeye_devam/viewmodels/favorites_viewmodel.dart';
 import 'package:flutter/material.dart';
@@ -25,8 +26,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => DashboardViewModel()),
         ChangeNotifierProvider(create: (_) => FavoritesViewModel()),
-        // Eğer AuthViewModel'ın varsa buraya ekle:
-        // ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(create: (_) => AuthViewModel()),
       ],
       child: const MyApp(),
     ),
