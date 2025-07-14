@@ -32,8 +32,8 @@ class AdminModel {
               (e) => e.name == json['role'],
               orElse: () => AdminRole.worker,
       ),
-      createdAt: DateTime.tryParse(json['created_at' ?? '']) ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at' ?? '']) ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']) ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at']) ?? DateTime.now(),
     );
   }
 
