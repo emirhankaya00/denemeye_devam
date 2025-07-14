@@ -10,6 +10,8 @@ import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../viewmodels/auth_viewmodel.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -29,7 +31,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       const AppointmentsScreen(),
       const SearchScreen(),
       const FavoritesScreen(),
-      Center(child: Text('Profil Sayfası', style: AppFonts.poppinsBold(fontSize: 24, color: AppColors.textColorDark))),
+      Center(
+        child: Text(
+          'Profil Sayfası',
+          style: AppFonts.poppinsBold(
+            fontSize: 24,
+            color: AppColors.textColorDark,
+          ),
+        ),
+      ),
     ];
   }
 
@@ -57,34 +67,44 @@ class _DashboardContent extends StatelessWidget {
           child: viewModel.isLoading && viewModel.nearbySaloons.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : RefreshIndicator(
-            onRefresh: () => viewModel.fetchDashboardData(),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: Image.asset('assets/map_placeholder.png', fit: BoxFit.cover, height: 200, width: double.infinity),
+                  onRefresh: () => viewModel.fetchDashboardData(),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(15),
+                            child: Image.asset(
+                              'assets/map_placeholder.png',
+                              fit: BoxFit.cover,
+                              height: 200,
+                              width: double.infinity,
+                            ),
+                          ),
+                        ),
+                        const SectionTitle(
+                          title: 'Yakınlarda bulunan salonlar',
+                        ),
+                        SaloonList(saloons: viewModel.nearbySaloons),
+                        const SectionDivider(),
+                        const SectionTitle(title: 'En yüksek puanlı salonlar'),
+                        SaloonList(saloons: viewModel.topRatedSaloons),
+                        const SectionDivider(),
+
+                        // --- KAMPANYALI SALONLAR BÖLÜMÜNÜ GERİ EKLEDİK ---
+                        const SectionTitle(title: 'Kampanyadaki salonlar'),
+                        SaloonList(
+                          saloons: viewModel.campaignSaloons,
+                          hasCampaign: true,
+                        ),
+                        const SizedBox(height: 20),
+                      ],
                     ),
                   ),
-                  const SectionTitle(title: 'Yakınlarda bulunan salonlar'),
-                  SaloonList(saloons: viewModel.nearbySaloons),
-                  const SectionDivider(),
-                  const SectionTitle(title: 'En yüksek puanlı salonlar'),
-                  SaloonList(saloons: viewModel.topRatedSaloons),
-                  const SectionDivider(),
-
-                  // --- KAMPANYALI SALONLAR BÖLÜMÜNÜ GERİ EKLEDİK ---
-                  const SectionTitle(title: 'Kampanyadaki salonlar'),
-                  SaloonList(saloons: viewModel.campaignSaloons, hasCampaign: true),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ),
+                ),
         ),
       ],
     );
@@ -100,13 +120,73 @@ class _TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     // ... (Bu widget'ın içeriği önceki cevapla aynı, değişmedi)
     return Container(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 10, left: 16, right: 16, bottom: 10),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 16,
+        right: 16,
+        bottom: 10,
+      ),
       color: AppColors.primaryColor,
       child: Row(
         children: [
-          Expanded(child: GestureDetector(onTap: onSearchTap, child: Container(height: 45, padding: const EdgeInsets.symmetric(horizontal: 16), decoration: BoxDecoration(color: AppColors.cardColor, borderRadius: BorderRadius.circular(30), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 5, offset: const Offset(0, 2))]), child: Row(children: [Icon(Icons.search, color: AppColors.textColorLight), const SizedBox(width: 8), Text('Ara...', style: AppFonts.bodyMedium(color: AppColors.textColorLight))])))),
+          Expanded(
+            child: GestureDetector(
+              onTap: onSearchTap,
+              child: Container(
+                height: 45,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.cardColor,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.search, color: AppColors.textColorLight),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Ara...',
+                      style: AppFonts.bodyMedium(
+                        color: AppColors.textColorLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           const SizedBox(width: 10),
-          PopupMenuButton<String>(icon: const Icon(Icons.more_vert, color: Colors.white), onSelected: (value) { if (value == 'logout') { Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const HomePage()), (route) => false); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Başarıyla çıkış yapıldı.')));}}, itemBuilder: (context) => [PopupMenuItem<String>(value: 'logout', child: Row(children: [Icon(Icons.logout, color: AppColors.textColorDark), const SizedBox(width: 8), Text('Çıkış Yap', style: AppFonts.bodyMedium(color: AppColors.textColorDark))]))]),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            onSelected: (value) {
+              if (value == 'logout') {
+                Provider.of<AuthViewModel>(context, listen: false).signOut();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: AppColors.textColorDark),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Çıkış Yap',
+                      style: AppFonts.bodyMedium(
+                        color: AppColors.textColorDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -118,7 +198,16 @@ class SectionTitle extends StatelessWidget {
   const SectionTitle({super.key, required this.title});
   @override
   Widget build(BuildContext context) {
-    return Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), child: Text(title, style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorDark)));
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Text(
+        title,
+        style: AppFonts.poppinsBold(
+          fontSize: 18,
+          color: AppColors.textColorDark,
+        ),
+      ),
+    );
   }
 }
 
@@ -126,19 +215,29 @@ class SectionDivider extends StatelessWidget {
   const SectionDivider({super.key});
   @override
   Widget build(BuildContext context) {
-    return Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0), child: Divider(color: AppColors.dividerColor, thickness: 1));
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+      child: Divider(color: AppColors.dividerColor, thickness: 1),
+    );
   }
 }
 
 class SaloonList extends StatelessWidget {
   final List<SaloonModel> saloons;
   final bool hasCampaign;
-  const SaloonList({super.key, required this.saloons, this.hasCampaign = false});
+  const SaloonList({
+    super.key,
+    required this.saloons,
+    this.hasCampaign = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     if (saloons.isEmpty) {
-      return const SizedBox(height: 100, child: Center(child: Text("Bu kategoride salon bulunamadı.")));
+      return const SizedBox(
+        height: 100,
+        child: Center(child: Text("Bu kategoride salon bulunamadı.")),
+      );
     }
     return SizedBox(
       height: 285,
@@ -148,7 +247,9 @@ class SaloonList extends StatelessWidget {
         itemCount: saloons.length,
         itemBuilder: (context, index) {
           final salon = saloons[index];
-          final serviceNames = salon.services.map((s) => s.serviceName).toList();
+          final serviceNames = salon.services
+              .map((s) => s.serviceName)
+              .toList();
           return SalonCard(
             name: salon.saloonName,
             rating: '4.8',

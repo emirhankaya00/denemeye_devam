@@ -3,7 +3,10 @@ import 'package:denemeye_devam/features/common/widgets/my_button.dart';
 import 'package:denemeye_devam/features/common/widgets/custom_text_field.dart';
 import 'package:denemeye_devam/core/app_colors.dart';
 import 'package:denemeye_devam/features/common/widgets/custom_card.dart';
-import 'package:denemeye_devam/screens/root_screen.dart'; // <-- RootScreen'i buraya import ettik!
+import 'package:denemeye_devam/screens/root_screen.dart';
+import 'package:provider/provider.dart';
+
+import '../../../viewmodels/auth_viewmodel.dart'; // <-- RootScreen'i buraya import ettik!
 // import 'package:denemeye_devam/screens/dashboard_screen.dart'; // DashboardScreen import'ına artık burada ihtiyacımız yoktu, kaldırdık.
 
 
@@ -15,6 +18,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -90,19 +94,18 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 30),
                   MyCustomButton(
                     onPressed: () {
-                      // Kullanıcı adı ve şifre kontrolü burada yapılabilir
-                      // Şimdilik direkt geçiş yapıyoruz.
+                      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
 
-                      debugPrint('Kullanıcı Adı: ${_usernameController.text}');
-                      debugPrint('Şifre: ${_passwordController.text}');
+                      final email = _usernameController.text.trim(); // Supabase email istiyor, o yüzden username controller'ı email olarak düşünelim.
+                      final password = _passwordController.text.trim();
 
-                      // SnackBar gösterimi devam edebilir
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              'Giriş Denemesi: K.Adı: ${_usernameController.text}, Şifre: ${_passwordController.text}'),
-                        ),
-                      );
+                      authViewModel.signIn(email, password).catchError((e) {
+                        // Hata olursa kullanıcıya bir SnackBar ile bilgi ver
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Giriş başarısız: ${e.message}')),
+                        );
+                      });
 
                       // DashboardScreen yerine RootScreen'a geçiş yapıyoruz!
                       // pushReplacement kullanarak, kullanıcının login sonrası geri tuşuyla geri dönmesini engelledik.
