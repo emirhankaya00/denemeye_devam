@@ -45,8 +45,8 @@ class ReservationModel {
           (e) => e.name == json['status'],
           orElse: () => ReservationStatus.pending,
       ),
-      createdAt: DateTime.tryParse(json['created_at' ?? '']) ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at' ?? '']) ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']) ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at']) ?? DateTime.now(),
     );
   }
 

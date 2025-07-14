@@ -1,3 +1,5 @@
+import 'package:denemeye_devam/models/SaloonModel.dart';
+
 enum FavouriteType {
   saloon,
   personal
@@ -9,6 +11,7 @@ class FavouriteModel {
   final String? personalId;
   final FavouriteType favouriteType;
   final DateTime createdAt;
+  final SaloonModel? saloon;
 
   FavouriteModel({
     required this.id,
@@ -17,6 +20,7 @@ class FavouriteModel {
     this.personalId,
     required this.favouriteType,
     required this.createdAt,
+    this.saloon,
   });
 
   factory FavouriteModel.fromJson(Map<String, dynamic> json) {
@@ -29,7 +33,10 @@ class FavouriteModel {
           (e) => e.name == json['favourite_type'],
           orElse: () => FavouriteType.saloon,
       ),
-      createdAt: DateTime.tryParse(json['created_at' ?? '']) ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']) ?? DateTime.now(),
+      saloon: json['saloons'] != null
+          ? SaloonModel.fromJson(json['saloons'])
+          : null,
     );
   }
 
