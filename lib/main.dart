@@ -1,4 +1,5 @@
 // lib/main.dart
+import 'package:denemeye_devam/viewmodels/appointments_viewmodel.dart';
 import 'package:denemeye_devam/viewmodels/auth_viewmodel.dart';
 import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
 import 'package:denemeye_devam/viewmodels/favorites_viewmodel.dart';
@@ -30,6 +31,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => FavoritesViewModel()),
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => SearchViewModel()),
+        ChangeNotifierProvider(create: (_) => AppointmentsViewModel()),
       ],
       child: const MyApp(),
     ),
