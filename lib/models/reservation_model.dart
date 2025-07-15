@@ -1,6 +1,6 @@
 
-import 'SaloonModel.dart';
-import 'ServiceModel.dart';
+import 'saloon_model.dart';
+import 'service_model.dart';
 
 enum ReservationStatus {
   pending,

@@ -1,6 +1,6 @@
 // lib/viewmodels/search_viewmodel.dart DOSYASINI GÜNCELLEYİN
 
-import 'package:denemeye_devam/models/SaloonModel.dart';
+import 'package:denemeye_devam/models/saloon_model.dart';
 import 'package:denemeye_devam/repositories/saloon_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -47,7 +47,7 @@ class SearchViewModel extends ChangeNotifier {
       _allSaloons = await _repository.getAllSaloons();
       _filteredSaloons = _allSaloons; // Başlangıçta hepsi gösterilir
     } catch (e) {
-      print("fetchAllSaloons Hata: $e");
+      debugPrint("fetchAllSaloons Hata: $e");
       _allSaloons = [];
       _filteredSaloons = [];
     }

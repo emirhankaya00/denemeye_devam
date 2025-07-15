@@ -1,5 +1,6 @@
 // lib/repositories/reservation_repository.dart
-import 'package:denemeye_devam/models/ReservationModel.dart';
+import 'package:denemeye_devam/models/reservation_model.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ReservationRepository {
@@ -17,7 +18,7 @@ class ReservationRepository {
       await _client.from('reservations').insert(reservationData);
 
     } catch (e) {
-      print('createReservation Hata: $e');
+      debugPrint('createReservation Hata: $e');
       throw Exception('Randevu oluşturulurken bir hata oluştu.');
     }
   }
@@ -35,7 +36,7 @@ class ReservationRepository {
       // Model'i de bu iç içe yapıyı okuyacak şekilde güncellememiz gerekecek.
       return data.map((item) => ReservationModel.fromJson(item)).toList();
     } catch (e) {
-      print('getReservationsForUser Hata: $e');
+      debugPrint('getReservationsForUser Hata: $e');
       throw Exception('Randevular getirilirken bir hata oluştu.');
     }
   }
@@ -48,7 +49,7 @@ class ReservationRepository {
           .update({'status': status.name}) // Enum'ı string'e çeviriyoruz
           .eq('reservation_id', reservationId);
     } catch (e) {
-      print('updateReservationStatus Hata: $e');
+      debugPrint('updateReservationStatus Hata: $e');
       throw Exception('Randevu durumu güncellenirken bir hata oluştu.');
     }
   }

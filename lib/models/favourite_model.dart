@@ -1,4 +1,4 @@
-import 'package:denemeye_devam/models/SaloonModel.dart';
+import 'package:denemeye_devam/models/saloon_model.dart';
 
 enum FavouriteType {
   saloon,

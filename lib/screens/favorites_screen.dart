@@ -1,5 +1,5 @@
 // lib/screens/favorites_screen.dart
-import 'package:denemeye_devam/models/SaloonModel.dart';
+import 'package:denemeye_devam/models/saloon_model.dart';
 import 'package:denemeye_devam/viewmodels/favorites_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

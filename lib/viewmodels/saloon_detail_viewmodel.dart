@@ -1,7 +1,7 @@
-import 'package:denemeye_devam/models/PersonalModel.dart';
-import 'package:denemeye_devam/models/ReservationModel.dart';
-import 'package:denemeye_devam/models/SaloonModel.dart';
-import 'package:denemeye_devam/models/ServiceModel.dart';
+import 'package:denemeye_devam/models/personal_model.dart';
+import 'package:denemeye_devam/models/reservation_model.dart';
+import 'package:denemeye_devam/models/saloon_model.dart';
+import 'package:denemeye_devam/models/service_model.dart';
 import 'package:flutter/material.dart';
 import 'package:denemeye_devam/repositories/saloon_repository.dart';
 import 'package:denemeye_devam/repositories/reservation_repository.dart';
@@ -45,7 +45,7 @@ class SalonDetailViewModel extends ChangeNotifier {
       _employees = results[1] as List<PersonalModel>;
       selectedDate = DateTime.now();
     } catch (e) {
-      print("fetchSalonDetails Hata: $e");
+      debugPrint("fetchSalonDetails Hata: $e");
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -60,7 +60,7 @@ class SearchScreen extends StatelessWidget {
                           side: BorderSide(
                             color: isSelected
                                 ? AppColors.accentColor
-                                : AppColors.dividerColor.withOpacity(0.5),
+                                : AppColors.dividerColor.withValues(alpha: 0.5),
                           ),
                         ),
                         elevation: isSelected ? 3 : 1,
@@ -93,19 +93,19 @@ class SearchScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.search_off,
-              size: 80, color: AppColors.textColorLight.withOpacity(0.5)),
+              size: 80, color: AppColors.textColorLight.withValues(alpha: 0.5)),
           const SizedBox(height: 20),
           Text(
             'Arama sonucunuz bulunamadı.',
             style: AppFonts.poppinsBold(
                 fontSize: 18,
-                color: AppColors.textColorLight.withOpacity(0.8)),
+                color: AppColors.textColorLight.withValues(alpha: 0.8)),
           ),
           Text(
             'Farklı bir kelime veya kategoriyle arama yapmayı deneyin.',
             textAlign: TextAlign.center,
             style: AppFonts.bodyMedium(
-                color: AppColors.textColorLight.withOpacity(0.6)),
+                color: AppColors.textColorLight.withValues(alpha: 0.6)),
           ),
         ],
       ),

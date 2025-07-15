@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/models/SaloonModel.dart';
+import 'package:denemeye_devam/models/saloon_model.dart';
 import 'package:denemeye_devam/repositories/saloon_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
