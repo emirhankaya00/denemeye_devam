@@ -30,33 +30,29 @@ class SaloonModel {
 
   factory SaloonModel.fromJson(Map<String, dynamic> json) {
     return SaloonModel(
-      saloonId: json['saloon_id'],
-      titlePhotoUrl: json['title_photo_url'],
-      saloonName: json['saloon_name'],
-      saloonDescription: json['saloon_description'],
-      saloonAddress: json['saloon_address'],
+      saloonId: json['saloon_id'] as String? ?? '', // null gelirse boş string ata
+      titlePhotoUrl: json['title_photo_url'] as String?,
+      saloonName: json['saloon_name'] as String? ?? 'İsimsiz Salon', // null gelirse varsayılan isim ata
+      saloonDescription: json['saloon_description'] as String?,
+      saloonAddress: json['saloon_address'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
-      phoneNumber: json['phone_number'],
-      email: json['email'],
-      createdAt: DateTime.tryParse(json['created_at']) ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at']) ?? DateTime.now(),
+      phoneNumber: json['phone_number'] as String?,
+      email: json['email'] as String?,
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
       services: json['saloon_services'] != null
           ? (json['saloon_services'] as List)
-      // Her bir 'saloon_service' kaydının içindeki 'services' nesnesini alıyoruz.
           .map((saloonServiceJson) {
-        // Eğer içteki 'services' nesnesi null değilse, onu ServiceModel'e çevir.
         if (saloonServiceJson['services'] != null) {
           return ServiceModel.fromJson(saloonServiceJson['services']);
         }
-        // Eğer bir şekilde null gelirse, bu adımı atla (null kontrolü)
         return null;
       })
-      // Listede oluşabilecek null değerleri temizle.
           .where((service) => service != null)
           .cast<ServiceModel>()
           .toList()
-          : [], // Eğer 'saloon_services' listesi gelmezse, boş bir liste ata.
+          : [],
     );
   }
 

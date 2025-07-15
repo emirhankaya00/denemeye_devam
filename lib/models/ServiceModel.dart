@@ -15,11 +15,11 @@ class ServiceModel {
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
     return ServiceModel(
-      serviceId: json['service_id'],
-      serviceName: json['service_name'],
-      description: json['description'],
-      estimatedTime: _parseDuration(json['estimated_time'] ?? '00:00:00'),
-      basePrice: (json['base_price'] as num).toDouble(),
+      serviceId: json['service_id'] as String? ?? '', // null ise boş string ata
+      serviceName: json['service_name'] as String? ?? 'İsimsiz Servis', // null ise varsayılan isim ata
+      description: json['description'] as String?,
+      estimatedTime: _parseDuration(json['estimated_time'] as String? ?? '00:00:00'),
+      basePrice: (json['base_price'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
