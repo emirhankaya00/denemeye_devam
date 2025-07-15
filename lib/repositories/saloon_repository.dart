@@ -17,6 +17,11 @@ class SaloonRepository {
       return [];
     }
   }
+  Future<List<SaloonModel>> getAllSaloons() async {
+    // Mevcut `_saloonWithServicesQuery` sorgusu bu iş için mükemmel.
+    // Tüm salonları, onlara bağlı hizmetleri ve hizmetlerin detaylarını getirir.
+    return _fetchSaloons(_saloonWithServicesQuery);
+  }
 
   // Sorguyu tek bir yerden yönetmek daha temiz.
   static const String _saloonWithServicesQuery = '*, saloon_services(*, services(*))';
