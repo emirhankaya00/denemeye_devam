@@ -1,7 +1,8 @@
-import 'package:denemeye_devam/models/SaloonModel.dart'; // Veriyi bu modele çevireceğiz
+import 'package:denemeye_devam/models/saloon_model.dart'; // Veriyi bu modele çevireceğiz
+import 'package:flutter/cupertino.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/PersonalModel.dart';
+import '../models/personal_model.dart';
 
 class SaloonRepository {
   final SupabaseClient _client;
@@ -13,7 +14,7 @@ class SaloonRepository {
       return data.map((item) => SaloonModel.fromJson(item)).toList();
     } catch (e) {
       // Hatayı daha detaylı görmek için konsola yazdır! Bu çok önemli!
-      print('Supabase sorgu hatası: $e');
+      debugPrint('Supabase sorgu hatası: $e');
       return [];
     }
   }
@@ -50,7 +51,7 @@ class SaloonRepository {
 
       return SaloonModel.fromJson(response);
     } catch (e) {
-      print('getSaloonById Hata: $e');
+      debugPrint('getSaloonById Hata: $e');
       return null;
     }
   }
@@ -65,7 +66,7 @@ class SaloonRepository {
 
       return response.map((item) => PersonalModel.fromJson(item)).toList();
     } catch (e) {
-      print('getEmployeesBySaloon Hata: $e');
+      debugPrint('getEmployeesBySaloon Hata: $e');
       return [];
     }
   }

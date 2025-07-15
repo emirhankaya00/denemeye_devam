@@ -1,9 +1,10 @@
 // lib/viewmodels/appointments_viewmodel.dart
 
-import 'package:denemeye_devam/models/ReservationModel.dart';
+import 'package:denemeye_devam/models/reservation_model.dart';
 import 'package:denemeye_devam/repositories/reservation_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/cupertino.dart';
 
 class AppointmentsViewModel extends ChangeNotifier {
   final ReservationRepository _repository = ReservationRepository(Supabase.instance.client);
@@ -28,7 +29,7 @@ class AppointmentsViewModel extends ChangeNotifier {
       // Randevuları tarihe göre sıralayalım (en yeni en üstte)
       _allAppointments.sort((a, b) => b.reservationDate.compareTo(a.reservationDate));
     } catch (e) {
-      print(e);
+      debugPrint('$e');
       // Burada kullanıcıya bir hata mesajı göstermek için bir state tutabilirsiniz
     }
 
@@ -43,7 +44,7 @@ class AppointmentsViewModel extends ChangeNotifier {
       // Listeyi yerel olarak güncellemek yerine, en güncel veriyi çekmek daha güvenilirdir.
       await fetchAppointments();
     } catch (e) {
-      print(e);
+      debugPrint('$e');
       // Hata durumunda kullanıcıya bilgi ver
       rethrow;
     }

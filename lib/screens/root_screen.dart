@@ -13,7 +13,6 @@ import 'package:denemeye_devam/screens/search_screen.dart';
 import 'package:denemeye_devam/screens/favorites_screen.dart';
 import 'package:denemeye_devam/screens/profile_screen.dart';
 import 'package:denemeye_devam/viewmodels/search_viewmodel.dart'; // YENİ: SearchViewModel import edildi
-import 'package:denemeye_devam/viewmodels/favorites_viewmodel.dart'; // Favoriler ViewModel
 // Eğer Randevular için de bir ViewModel oluşturursanız, onu da buraya import edin.
 // import 'package:denemeye_devam/viewmodels/appointments_viewmodel.dart';
 
@@ -265,14 +264,14 @@ class _MainAppState extends State<MainApp> {
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: AppColors.textOnPrimary,
-        unselectedItemColor: AppColors.textOnPrimary.withOpacity(0.7),
+        unselectedItemColor: AppColors.textOnPrimary.withValues(alpha: 0.5),
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
         backgroundColor: AppColors.primaryColor,
         elevation: 10,
         selectedLabelStyle: AppFonts.bodySmall(color: AppColors.textOnPrimary),
         unselectedLabelStyle: AppFonts.bodySmall(
-          color: AppColors.textOnPrimary.withOpacity(0.7),
+          color: AppColors.textOnPrimary.withValues(alpha: 0.7),
         ),
       ),
     );

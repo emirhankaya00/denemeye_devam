@@ -1,6 +1,6 @@
 // lib/features/appointments/screens/appointments_screen.dart
 
-import 'package:denemeye_devam/models/ReservationModel.dart';
+import 'package:denemeye_devam/models/reservation_model.dart';
 import 'package:denemeye_devam/viewmodels/appointments_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:denemeye_devam/core/app_colors.dart';
@@ -155,7 +155,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -169,7 +169,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             width: 70,
             height: 70,
             decoration: BoxDecoration(
-              color: AppColors.primaryColor.withOpacity(0.8),
+              color: AppColors.primaryColor.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(15),
               image: reservation.saloon?.titlePhotoUrl != null &&
                   reservation.saloon!.titlePhotoUrl!.isNotEmpty
@@ -230,20 +230,22 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                               try {
                                 await appointmentsViewModel.cancelAppointment(
                                     reservation.reservationId);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          'Randevu başarıyla iptal edildi.'),
-                                      backgroundColor: Colors.green),
-                                );
+                                if (context.mounted) { // <-- YENİ EKLENDİ
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Randevu başarıyla iptal edildi.'),
+                                        backgroundColor: Colors.green),
+                                  );
+                                }
                               } catch (e) {
+                                if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                       content: Text('Hata: ${e.toString()}'),
                                       backgroundColor: Colors.red),
                                 );
                               }
-                            }
+                            }}
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red.shade400,

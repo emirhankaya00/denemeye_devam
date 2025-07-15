@@ -1,4 +1,4 @@
-import 'package:denemeye_devam/models/ServiceModel.dart'; // <-- ServiceModel'i import etmemiz gerekiyor!
+import 'package:denemeye_devam/models/service_model.dart'; // <-- ServiceModel'i import etmemiz gerekiyor!
 class SaloonModel {
   final String saloonId;
   final String? titlePhotoUrl;

@@ -1,9 +1,9 @@
 // GEREKLİ TÜM IMPORT'LAR BURADA
 import 'package:denemeye_devam/core/app_colors.dart';
 import 'package:denemeye_devam/core/app_fonts.dart';
-import 'package:denemeye_devam/models/PersonalModel.dart';
-import 'package:denemeye_devam/models/ServiceModel.dart';
-import 'package:denemeye_devam/models/SaloonModel.dart';
+import 'package:denemeye_devam/models/personal_model.dart';
+import 'package:denemeye_devam/models/service_model.dart';
+import 'package:denemeye_devam/models/saloon_model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
@@ -205,7 +205,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.cardColor.withOpacity(0.9),
+                color: AppColors.cardColor.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(15),
               ),
               child: Column(
@@ -313,7 +313,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             spreadRadius: 1,
             blurRadius: 5,
           ),
@@ -421,7 +421,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                                     vm.selectServiceForAppointment(val!),
                                 activeColor: AppColors.primaryColor,
                               );
-                            }).toList(),
+                            }),
                             const SizedBox(height: 20),
                             _buildSectionTitle('Çalışan Seçimi'),
                             ...vm.employees.map((employee) {
@@ -435,7 +435,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                                     vm.selectEmployeeForAppointment(val!),
                                 activeColor: AppColors.primaryColor,
                               );
-                            }).toList(),
+                            }),
                           ],
                         ),
                       ),
@@ -450,6 +450,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                             ? () async {
                                 try {
                                   await vm.createReservation();
+                                  if (!context.mounted) return;
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
@@ -460,6 +461,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                                     ),
                                   );
                                 } catch (e) {
+                                  if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(e.toString()),

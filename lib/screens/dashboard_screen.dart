@@ -1,11 +1,7 @@
-// lib/screens/dashboard_screen.dart
 import 'package:denemeye_devam/core/app_colors.dart';
 import 'package:denemeye_devam/core/app_fonts.dart';
-import 'package:denemeye_devam/features/appointments/screens/appointments_screen.dart'; // Bu import hala gerekli olabilir
 import 'package:denemeye_devam/features/common/widgets/salon_card.dart';
-import 'package:denemeye_devam/models/SaloonModel.dart';
-import 'package:denemeye_devam/screens/favorites_screen.dart'; // Bu import hala gerekli olabilir
-import 'package:denemeye_devam/screens/search_screen.dart'; // Bu import hala gerekli olabilir
+import 'package:denemeye_devam/models/saloon_model.dart';
 import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

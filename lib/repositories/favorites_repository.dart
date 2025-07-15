@@ -1,6 +1,6 @@
 // lib/repositories/favorites_repository.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:denemeye_devam/models/FavouriteModel.dart';
+import 'package:denemeye_devam/models/favourite_model.dart';
 
 class FavoritesRepository {
   final SupabaseClient _client;
