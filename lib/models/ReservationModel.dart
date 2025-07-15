@@ -1,4 +1,7 @@
 
+import 'SaloonModel.dart';
+import 'ServiceModel.dart';
+
 enum ReservationStatus {
   pending,
   confirmed,
@@ -11,42 +14,59 @@ class ReservationModel {
   final String reservationId;
   final String userId;
   final String saloonId;
-  final String personalId;
+  final String? personalId;
   final DateTime reservationDate;     // sadece tarih
   final String reservationTime;       // saat kısmı, HH:mm:ss string olarak alınır
   final double totalPrice;
   final ReservationStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final SaloonModel? saloon;
+  final ServiceModel? service;
 
   ReservationModel({
     required this.reservationId,
     required this.userId,
     required this.saloonId,
-    required this.personalId,
+    this.personalId,
     required this.reservationDate,
     required this.reservationTime,
     required this.totalPrice,
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.saloon, // Constructor'a eklendi
+    this.service,
   });
 
   factory ReservationModel.fromJson(Map<String, dynamic> json) {
+    ServiceModel? service;
+    if (json['reservation_services'] != null && (json['reservation_services'] as List).isNotEmpty) {
+      final serviceData = json['reservation_services'][0]['services'];
+      if (serviceData != null) {
+        service = ServiceModel.fromJson(serviceData);
+      }
+    }
+
     return ReservationModel(
-      reservationId: json['reservation_id'],
-      userId: json['user_id'],
-      saloonId: json['saloon_id'],
-      personalId: json['personal_id'],
-      reservationDate: DateTime.parse(json['reservation_date']),
-      reservationTime: json['reservation_time'],
-      totalPrice: (json['total_price'] as num).toDouble(),
+      // --- NULL KONTROLLERİ EKLENDİ ---
+      reservationId: json['reservation_id'] as String? ?? '', // null ise boş string ata
+      userId: json['user_id'] as String? ?? '',
+      saloonId: json['saloon_id'] as String? ?? '',
+      personalId: json['personal_id'] as String?, // Direkt nullable olarak al
+      reservationDate: DateTime.tryParse(json['reservation_date'] ?? '') ?? DateTime.now(),
+      reservationTime: json['reservation_time'] as String? ?? '00:00',
+      totalPrice: (json['total_price'] as num?)?.toDouble() ?? 0.0,
       status: ReservationStatus.values.firstWhere(
-          (e) => e.name == json['status'],
-          orElse: () => ReservationStatus.pending,
+            (e) => e.name == json['status'],
+        orElse: () => ReservationStatus.pending,
       ),
-      createdAt: DateTime.tryParse(json['created_at']) ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at']) ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
+      saloon: json['saloons'] != null
+          ? SaloonModel.fromJson(json['saloons'])
+          : null,
+      service: service,
     );
   }
 

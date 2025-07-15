@@ -24,14 +24,25 @@ class PersonalModel {
   });
 
   factory PersonalModel.fromJson(Map<String, dynamic> json) {
+    List<String>? specialties;
+    final specialtyData = json['specialty'];
+
+    // Gelen veri bir liste mi diye kontrol et
+    if (specialtyData is List) {
+      specialties = List<String>.from(specialtyData.map((x) => x as String));
+    }
+    // Gelen veri bir string mi diye kontrol et (ve boş değilse)
+    else if (specialtyData is String && specialtyData.isNotEmpty) {
+      // Tek bir string geldiyse, onu tek elemanlı bir listeye çevir
+      specialties = [specialtyData];
+    }
+
     return PersonalModel(
       personalId: json['personal_id'],
       saloonId: json['saloon_id'],
       name: json['name'],
       surname: json['surname'],
-      specialty: json['specialty'] != null
-          ? List<String>.from(json['specialty'].map((x) => x as String))
-          : null,
+      specialty: specialties,
       profilePhotoUrl: json['profile_photo_url'],
       phoneNumber: json['phone_number'],
       email: json['email'],
