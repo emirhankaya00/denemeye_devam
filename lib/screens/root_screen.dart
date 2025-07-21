@@ -12,9 +12,7 @@ import 'package:denemeye_devam/features/appointments/screens/appointments_screen
 import 'package:denemeye_devam/screens/search_screen.dart';
 import 'package:denemeye_devam/screens/favorites_screen.dart';
 import 'package:denemeye_devam/screens/profile_screen.dart';
-import 'package:denemeye_devam/viewmodels/search_viewmodel.dart'; // YENİ: SearchViewModel import edildi
-// Eğer Randevular için de bir ViewModel oluşturursanız, onu da buraya import edin.
-// import 'package:denemeye_devam/viewmodels/appointments_viewmodel.dart';
+import 'package:denemeye_devam/viewmodels/search_viewmodel.dart';
 
 /// Bu widget artık bir yönlendirici (router) görevi görüyor.
 /// Tek işi, kullanıcının giriş durumunu dinleyip doğru ekranı göstermek.
@@ -46,13 +44,13 @@ class _MainAppState extends State<MainApp> {
   late TextEditingController _searchController; // Arama çubuğu için controller
   late FocusNode _searchFocusNode; // Arama çubuğu için focus node
 
-  // Alt navigasyon barında gösterilecek ekranların listesi
+  // Alt navigasyon barında gösterilecek ekranların listesi (5 ikonlu tasarıma göre ayarlandı)
   static final List<Widget> _pages = <Widget>[
-    const DashboardScreen(),
-    const AppointmentsScreen(),
-    const SearchScreen(),
-    const FavoritesScreen(),
-    const ProfileScreen(),
+    const DashboardScreen(), // Index 0
+    const AppointmentsScreen(), // Index 1
+    const SearchScreen(), // Index 2
+    const FavoritesScreen(), // Index 3
+    const ProfileScreen(), // Index 4
   ];
 
   @override
@@ -61,14 +59,12 @@ class _MainAppState extends State<MainApp> {
     _searchController = TextEditingController();
     _searchFocusNode = FocusNode();
 
-    // Arama sorgusu değiştikçe SearchViewModel'ı güncelle
     _searchController.addListener(() {
       Provider.of<SearchViewModel>(context, listen: false).setSearchQuery(_searchController.text);
     });
 
     _searchFocusNode.addListener(() {
       if (!_searchFocusNode.hasFocus) {
-        // Arama çubuğu odağı kaybettiğinde, arama modunu kapat.
         Provider.of<SearchViewModel>(context, listen: false).toggleSearch(false);
       }
     });
@@ -84,17 +80,15 @@ class _MainAppState extends State<MainApp> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
-      // Yeni bir sekmeye geçildiğinde arama modunu ve sorguyu sıfırla
       _searchController.clear();
       _searchFocusNode.unfocus();
       Provider.of<SearchViewModel>(context, listen: false).toggleSearch(false);
     });
   }
 
-  // Dinamik AppBar oluşturma metodu
   AppBar _buildDynamicAppBar(BuildContext context) {
-    final searchViewModel = context.watch<SearchViewModel>(); // SearchViewModel'ı dinle
-    final authViewModel = context.watch<AuthViewModel>(); // AuthViewModel'ı dinle (logout için)
+    final searchViewModel = context.watch<SearchViewModel>();
+    final authViewModel = context.watch<AuthViewModel>();
 
     String titleText = '';
     bool showSearchField = false;
@@ -104,9 +98,8 @@ class _MainAppState extends State<MainApp> {
     String? searchHint;
 
     switch (_selectedIndex) {
-      case 0: // DashboardScreen (Ana Sayfa)
+      case 0: // DashboardScreen
         titleText = 'Ana Sayfa';
-        // Dashboard'da arama çubuğu yerine arama ikonu veya boş bırakabiliriz
         actions = [
           IconButton(
             icon: const Icon(Icons.search, color: Colors.white),
@@ -141,32 +134,32 @@ class _MainAppState extends State<MainApp> {
           ),
         ];
         break;
-      case 1: // AppointmentsScreen (Randevularım)
+      case 1: // AppointmentsScreen
         titleText = 'Randevularım';
         showSearchField = true;
         searchHint = 'Randevu ara...';
-        showBackButton = true; // Dashboard'a dönmek için geri tuşu
-        leadingAction = () => _onItemTapped(0); // YENİ: Dashboard'a dön
+        showBackButton = true;
+        leadingAction = () => _onItemTapped(0);
         break;
-      case 2: // SearchScreen (Ara)
+      case 2: // SearchScreen
         titleText = 'Ara';
         showSearchField = true;
         searchHint = 'Salon veya hizmet ara...';
-        showBackButton = true; // Dashboard'a dönmek için geri tuşu
-        leadingAction = () => _onItemTapped(0); // YENİ: Dashboard'a dön
+        showBackButton = true;
+        leadingAction = () => _onItemTapped(0);
         break;
-      case 3: // FavoritesScreen (Favorilerim)
+      case 3: // FavoritesScreen
         titleText = 'Favorilerim';
         showSearchField = true;
         searchHint = 'Favorilerde ara...';
-        showBackButton = true; // Dashboard'a dönmek için geri tuşu
-        leadingAction = () => _onItemTapped(0); // YENİ: Dashboard'a dön
+        showBackButton = true;
+        leadingAction = () => _onItemTapped(0);
         break;
-      case 4: // ProfileScreen (Profilim)
+      case 4: // ProfileScreen
         titleText = 'Profilim';
         showSearchField = false;
-        showBackButton = true; // Dashboard'a dönmek için geri tuşu
-        leadingAction = () => _onItemTapped(0); // YENİ: Dashboard'a dön
+        showBackButton = true;
+        leadingAction = () => _onItemTapped(0);
         break;
     }
 
@@ -186,8 +179,8 @@ class _MainAppState extends State<MainApp> {
         ),
         onPressed: leadingAction,
       )
-          : null, // Geri tuşu yoksa boş bırak
-      titleSpacing: showSearchField ? 0 : null, // Arama çubuğu varsa boşluğu kaldır
+          : null,
+      titleSpacing: showSearchField ? 0 : null,
       title: showSearchField
           ? Container(
         height: 48.0,
@@ -199,7 +192,6 @@ class _MainAppState extends State<MainApp> {
           controller: _searchController,
           focusNode: _searchFocusNode,
           onTap: () {
-            // Arama çubuğuna tıklandığında arama modunu aç
             searchViewModel.toggleSearch(true);
           },
           decoration: InputDecoration(
@@ -211,7 +203,7 @@ class _MainAppState extends State<MainApp> {
               icon: Icon(Icons.clear, color: AppColors.textColorLight),
               onPressed: () {
                 _searchController.clear();
-                searchViewModel.setSearchQuery(''); // Sorguyu temizle
+                searchViewModel.setSearchQuery('');
               },
             )
                 : null,
@@ -225,54 +217,111 @@ class _MainAppState extends State<MainApp> {
         titleText,
         style: AppFonts.poppinsBold(fontSize: 20, color: AppColors.textOnPrimary),
       ),
-      actions: showSearchField ? const [SizedBox(width: 16.0)] : actions, // Arama çubuğu varsa boşluk bırak, yoksa actions'ları göster
+      actions: showSearchField ? const [SizedBox(width: 16.0)] : actions,
+    );
+  }
+
+  // Özel olarak BottomNavigationBar item ikonlarını ve arka planını oluşturmak için yardımcı fonksiyon
+  Widget _buildNavItem(IconData icon, int index) {
+    final bool isSelected = _selectedIndex == index;
+    // İkonun boyutuna göre kare bir alan belirle
+    final double iconSize = 24.0; // İkon boyutu
+    final double padding = 6.0; // İç dolgu
+    final double containerSize = iconSize + (padding * 2); // Konteyner boyutu (24 + 12 = 36)
+
+    return Center(
+      child: Container(
+        width: containerSize, // Genişliği belirle
+        height: containerSize, // Yüksekliği belirle
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.black : Colors.transparent,
+          borderRadius: BorderRadius.circular(12.0), // Köşelerin yuvarlak kalması için mevcut radius
+          border: isSelected ? null : Border.all(color: Colors.grey.shade300, width: 1.0),
+        ),
+        child: Icon(
+          icon,
+          size: iconSize,
+          color: isSelected ? Colors.white : Colors.black,
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildDynamicAppBar(context), // Dinamik AppBar burada!
-      body: IndexedStack(index: _selectedIndex, children: _pages),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Ana Sayfa',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today),
-            label: 'Randevular',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search_outlined),
-            activeIcon: Icon(Icons.search),
-            label: 'Ara',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            activeIcon: Icon(Icons.favorite),
-            label: 'Favoriler',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profil',
+      appBar: _buildDynamicAppBar(context),
+      body: Stack(
+        children: [
+          // Sayfa içeriği
+          IndexedStack(index: _selectedIndex, children: _pages),
+          // Floating Bottom Navigation Bar
+          Positioned(
+            bottom: 20.0,
+            left: 20.0,
+            right: 20.0,
+            child: Container(
+              height: 95.0,
+              decoration: BoxDecoration(
+                color: AppColors.cardColor,
+                borderRadius: BorderRadius.circular(20.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    spreadRadius: 0,
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20.0),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: BottomNavigationBar(
+                    items: <BottomNavigationBarItem>[
+                      BottomNavigationBarItem(
+                        icon: _buildNavItem(Icons.auto_awesome_outlined, 0), // Makas yerine Parıltı ikonu
+                        activeIcon: _buildNavItem(Icons.auto_awesome_outlined, 0),
+                        label: '',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: _buildNavItem(Icons.event_note_outlined, 1), // Takvim (notlu)
+                        activeIcon: _buildNavItem(Icons.event_note_outlined, 1),
+                        label: '',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: _buildNavItem(Icons.search_outlined, 2), // Parıltı yerine Arama ikonu
+                        activeIcon: _buildNavItem(Icons.search_outlined, 2),
+                        label: '',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: _buildNavItem(Icons.favorite_border, 3), // Favoriler
+                        activeIcon: _buildNavItem(Icons.favorite, 3),
+                        label: '',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: _buildNavItem(Icons.person_outline, 4), // Kişi ikonu
+                        activeIcon: _buildNavItem(Icons.person_outline, 4),
+                        label: '',
+                      ),
+                    ],
+                    currentIndex: _selectedIndex,
+                    selectedItemColor: Colors.transparent,
+                    unselectedItemColor: Colors.transparent,
+                    onTap: _onItemTapped,
+                    type: BottomNavigationBarType.fixed,
+                    backgroundColor: AppColors.cardColor,
+                    elevation: 0,
+                    selectedLabelStyle: const TextStyle(fontSize: 0),
+                    unselectedLabelStyle: const TextStyle(fontSize: 0),
+                    iconSize: 24.0,
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: AppColors.textOnPrimary,
-        unselectedItemColor: AppColors.textOnPrimary.withValues(alpha: 0.5),
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.primaryColor,
-        elevation: 10,
-        selectedLabelStyle: AppFonts.bodySmall(color: AppColors.textOnPrimary),
-        unselectedLabelStyle: AppFonts.bodySmall(
-          color: AppColors.textOnPrimary.withValues(alpha: 0.7),
-        ),
       ),
     );
   }
