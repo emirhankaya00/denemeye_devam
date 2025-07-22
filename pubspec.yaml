@@ -37,7 +37,7 @@ dependencies:
   uuid: ^4.5.1
   supabase_flutter: ^2.9.1
   provider: ^6.1.5
-
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -60,6 +60,7 @@ flutter: # Bu ilk 'flutter:' bloğu
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true # Bu satır doğru yerde ve yeterli
+
   fonts:
     - family: Poppins
       fonts:
@@ -72,6 +73,7 @@ flutter: # Bu ilk 'flutter:' bloğu
         - asset: assets/fonts/Montserrat-Bold.ttf
           weight: 700
   assets:
+    - .env # Bu satırı ekleyin
     - assets/map_placeholder.png
 
   # To add assets to your application, add an assets section, like this:

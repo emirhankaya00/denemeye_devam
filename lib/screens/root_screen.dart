@@ -163,10 +163,31 @@ class _MainAppState extends State<MainApp> {
         break;
     }
 
+    // GÜNCELLENMİŞ APPBAR KODU BURADA
     return AppBar(
-      backgroundColor: AppColors.primaryColor,
-      elevation: 0,
+      elevation: 8, // Gölge efekti için elevation artırıldı
       toolbarHeight: 80.0,
+      // AppBar'ın alt köşelerine yuvarlaklık veriyoruz
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          bottom: Radius.circular(25), // İstediğiniz yuvarlaklık değeri
+        ),
+      ),
+      flexibleSpace: Container( // Gradient arka plan için Container eklendi
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.primaryColor, // Gradientin başlangıç rengi
+              AppColors.accentColor, // Gradientin bitiş rengi
+            ],
+          ),
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(25),
+          ),
+        ),
+      ),
       leading: showBackButton
           ? IconButton(
         icon: Container(
@@ -267,7 +288,7 @@ class _MainAppState extends State<MainApp> {
                 borderRadius: BorderRadius.circular(20.0),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     spreadRadius: 0,
                     blurRadius: 10,
                     offset: const Offset(0, 5),

@@ -10,6 +10,10 @@ class PersonalModel {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  var title;
+
+  var profileImageUrl;
+
   PersonalModel({
     required this.personalId,
     required this.saloonId,

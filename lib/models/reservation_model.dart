@@ -4,6 +4,7 @@ import 'service_model.dart';
 
 enum ReservationStatus {
   pending,
+  offered,
   confirmed,
   completed,
   cancelled,

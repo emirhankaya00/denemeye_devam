@@ -10,18 +10,21 @@ import 'package:denemeye_devam/screens/root_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // flutter_dotenv import edildi
 
 import 'features/auth/screens/home_page.dart';
-// Eğer bir AuthViewModel'ın varsa onu da import et
-// import 'package:denemeye_devam/viewmodels/auth_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('tr', null);
+
+  // .env dosyasını yükle
+  await dotenv.load(fileName: ".env");
+
   await Supabase.initialize(
-    url: 'https://ndptlhgrilvxrxogzuyw.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kcHRsaGdyaWx2eHJ4b2d6dXl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5MjI3OTUsImV4cCI6MjA2NzQ5ODc5NX0.rhLSmN3BMgxovaOxOkUoTxSMaa-V3Nh_x9Hfv5B9aWA',
+    // .env dosyasından değerleri oku
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
   runApp(
@@ -58,11 +61,7 @@ class MyApp extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
       ),
-      // Kullanıcı giriş yaptıysa RootScreen'e, yapmadıysa HomePage'e git.
-      // Bu, uygulamanın ilk açılışında doğru ekranı göstermesini sağlar.
       home: isLoggedIn ? const RootScreen() : const HomePage(),
-      // Veya direkt olarak HomePage() ile başlayıp, HomePage içinde kontrolü yapabilirsin.
-      // home: const HomePage(),
     );
   }
 }
