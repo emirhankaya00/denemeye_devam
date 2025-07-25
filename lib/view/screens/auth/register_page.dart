@@ -1,5 +1,7 @@
+// lib/view/screens/auth/register_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_fonts.dart';
 import '../../view_models/auth_viewmodel.dart';
@@ -17,9 +19,10 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _surnameController = TextEditingController();
-  // Tasarıma uygun olarak telefon numarası alanı da ekleyelim.
   final TextEditingController _phoneController = TextEditingController();
 
+  bool _isLoading = false;
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
@@ -32,25 +35,20 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _submitRegisterForm() async {
+    if (!mounted) return;
+
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final name = _nameController.text.trim();
     final surname = _surnameController.text.trim();
     final phone = _phoneController.text.trim();
-
-
-    if (email.isEmpty || password.isEmpty || name.isEmpty || surname.isEmpty || phone.isEmpty) {
-      if(mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Lütfen tüm alanları doldurun.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
 
     try {
       await authViewModel.signUp(
@@ -63,157 +61,228 @@ class _RegisterPageState extends State<RegisterPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Kayıt başarılı! Giriş yapabilirsiniz.'),
+            content: Text('Kayıt başarılı! Yönlendiriliyorsunuz...'),
             backgroundColor: Colors.green,
           ),
         );
-        // Kullanıcıyı doğrudan giriş sayfasına yönlendir.
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const HomePage()),
-              (route) => false,
+
+        // Yönlendirme işlemi
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage()),
+                (route) => false,
+          );
+        });
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Kayıt başarısız: ${e.message}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Kayıt başarısız: ${e.toString()}'),
+            content: Text('Bir hata oluştu: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'E-posta gereklidir';
+    }
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+      return 'Geçerli bir e-posta adresi girin';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Şifre gereklidir';
+    }
+    if (value.length < 6) {
+      return 'Şifre en az 6 karakter olmalıdır';
+    }
+    return null;
+  }
+
+  String? _validateName(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Ad gereklidir';
+    }
+    return null;
+  }
+
+  String? _validatePhone(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Telefon numarası gereklidir';
+    }
+    if (!RegExp(r'^[0-9]{10}$').hasMatch(value)) {
+      return 'Geçerli bir telefon numarası girin (10 haneli)';
+    }
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    // 1. Scaffold arka plan rengi güncellendi.
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              // Yeni tasarıma uygun logo
-              Image.asset('assets/logos/iris_primary_logo.png', height: 150),
-              const SizedBox(height: 50),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Image.asset('assets/logos/iris_primary_logo.png', height: 150),
+                const SizedBox(height: 50),
 
-              // Başlıklar güncellendi
-              Text(
-                'Kayıt Ol',
-                style: AppFonts.poppinsBold(fontSize: 26, color: AppColors.textPrimary),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Sana özel fırsatları ve randevu takibini kolaylaştırmak için hemen kayıt ol.',
-                style: AppFonts.bodyMedium(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 30),
-
-              // TextField'lar yeni tasarıma uyarlandı
-              _buildTextField(
-                controller: _nameController,
-                labelText: 'Ad',
-              ),
-              const SizedBox(height: 20),
-              _buildTextField(
-                controller: _surnameController,
-                labelText: 'Soyad',
-              ),
-              const SizedBox(height: 20),
-              _buildTextField(
-                controller: _emailController,
-                labelText: 'E-posta',
-                keyboardType: TextInputType.emailAddress,
-                // E-posta için +90 ön eki eklenmez.
-              ),
-              const SizedBox(height: 20),
-              _buildTextField(
-                controller: _phoneController,
-                labelText: 'Telefon Numarası',
-                keyboardType: TextInputType.phone,
-                prefixText: '+90 ', // Telefon numarası için +90 ön eki
-              ),
-              const SizedBox(height: 20),
-              _buildTextField(
-                controller: _passwordController,
-                labelText: 'Şifre',
-                obscureText: true,
-              ),
-              const SizedBox(height: 40),
-
-              // Buton yeni tasarıma uyarlandı
-              ElevatedButton(
-                onPressed: _submitRegisterForm,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor,
-                  foregroundColor: AppColors.textOnPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                Text(
+                  'Kayıt Ol',
+                  style: AppFonts.poppinsBold(fontSize: 26, color: AppColors.textPrimary),
                 ),
-                child: Text('Kayıt Ol', style: AppFonts.poppinsBold(fontSize: 16)),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 8),
+                Text(
+                  'Sana özel fırsatları ve randevu takibini kolaylaştırmak için hemen kayıt ol.',
+                  style: AppFonts.bodyMedium(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 30),
 
-              // Giriş yap yönlendirmesi güncellendi
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Zaten hesabın var mı?', style: AppFonts.bodyMedium(color: AppColors.textSecondary)),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(); // Bir önceki sayfaya (giriş) dön
-                    },
-                    child: Text(
-                      'Giriş Yap',
-                      style: AppFonts.poppinsBold(color: AppColors.textButton),
+                _buildTextField(
+                  controller: _nameController,
+                  labelText: 'Ad',
+                  validator: _validateName,
+                ),
+                const SizedBox(height: 20),
+                _buildTextField(
+                  controller: _surnameController,
+                  labelText: 'Soyad',
+                  validator: _validateName,
+                ),
+                const SizedBox(height: 20),
+                _buildTextField(
+                  controller: _emailController,
+                  labelText: 'E-posta',
+                  keyboardType: TextInputType.emailAddress,
+                  validator: _validateEmail,
+                ),
+                const SizedBox(height: 20),
+                _buildTextField(
+                  controller: _phoneController,
+                  labelText: 'Telefon Numarası',
+                  keyboardType: TextInputType.phone,
+                  prefixText: '+90 ',
+                  validator: _validatePhone,
+                ),
+                const SizedBox(height: 20),
+                _buildTextField(
+                  controller: _passwordController,
+                  labelText: 'Şifre',
+                  obscureText: true,
+                  validator: _validatePassword,
+                ),
+                const SizedBox(height: 40),
+
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _submitRegisterForm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    foregroundColor: AppColors.textOnPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                ],
-              )
-            ],
+                  child: _isLoading
+                      ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                      : Text('Kayıt Ol', style: AppFonts.poppinsBold(fontSize: 16)),
+                ),
+                const SizedBox(height: 20),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Zaten hesabın var mı?', style: AppFonts.bodyMedium(color: AppColors.textSecondary)),
+                    TextButton(
+                      onPressed: () {
+                        // Login sayfasına yönlendirme
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(builder: (context) => const HomePage()),
+                        );
+                      },
+                      child: Text(
+                        'Giriş Yap',
+                        style: AppFonts.poppinsBold(color: AppColors.textButton),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // Standartlaşmış TextField oluşturucu
   Widget _buildTextField({
     required TextEditingController controller,
     required String labelText,
     bool obscureText = false,
     TextInputType? keyboardType,
-    String? prefixText, // Yeni prefixText parametresi
+    String? prefixText,
+    String? Function(String?)? validator,
   }) {
-    return TextField(
+    return TextFormField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
-      style: AppFonts.bodySmall(color: AppColors.textPrimary), // İçine yazılan yazıların stili: küçük ve ince
+      style: AppFonts.bodySmall(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: labelText,
         labelStyle: AppFonts.bodyMedium(color: AppColors.textSecondary),
-        prefixText: prefixText, // prefixText'i kullan
-        border: OutlineInputBorder( // Varsayılan kenarlık
-          borderRadius: BorderRadius.circular(12), // Yuvarlak köşeler
-          borderSide: const BorderSide(color: AppColors.borderColor), // Gri kenarlık
-        ),
-        enabledBorder: OutlineInputBorder( // Odaklanmadığında
+        prefixText: prefixText,
+        border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.borderColor),
         ),
-        focusedBorder: OutlineInputBorder( // Odaklandığında
+        enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primaryColor, width: 2), // Ana renk ve daha kalın
+          borderSide: const BorderSide(color: AppColors.borderColor),
         ),
-        filled: true, // Arka plan rengini etkinleştir
-        fillColor: AppColors.background, // Arka plan rengini beyaz yap
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primaryColor, width: 2),
+        ),
+        filled: true,
+        fillColor: AppColors.background,
+        errorStyle: AppFonts.bodySmall(color: Colors.red),
       ),
+      validator: validator,
     );
   }
 }

@@ -57,7 +57,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 title: 'Takvimini Sen Yönet Uzmanını seç, uygun tarih ve saati görüntüle, randevunu kolayca planla.',
               ),
               OnboardingPage(
-                imagePath: 'assets/images/onboarding_4.jpg',
+                imagePath: 'assets/images/iris_login_img_4.jpg',
                 logoPath: 'assets/logos/iris_white_logo.png',
                 title: 'Tüm Hizmetler Elinin Altında Servislerimizi ve uzmanlarımızı keşfetmeye başlamak için şimdi giriş yap veya kayıt ol.',
               ),

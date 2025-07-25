@@ -1,13 +1,13 @@
+// lib/view/screens/auth/home_page.dart
 import 'package:denemeye_devam/view/screens/auth/register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_fonts.dart'; // AppFonts'u kullanmak için ekledik
+import '../../../core/theme/app_fonts.dart';
 import '../../view_models/auth_viewmodel.dart';
-// Eski özel widget'lar artık kullanılmıyor.
-// import '../../widgets/common/custom_card.dart';
-// import '../../widgets/common/custom_text_field.dart';
-// import '../../widgets/common/my_custom_button.dart';
+import '../root_screen.dart'; // RootScreen'i import ettik
+import 'package:supabase_flutter/supabase_flutter.dart'; // AuthException için import ettik
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,6 +19,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false; // Yükleme durumu için eklendi
 
   @override
   void dispose() {
@@ -28,6 +29,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _signIn() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true; // Butona basıldığında yüklemeyi başlat
+    });
+
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -41,26 +48,56 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       }
+      setState(() {
+        _isLoading = false; // Hata durumunda yüklemeyi durdur
+      });
       return;
     }
 
     try {
       await authViewModel.signIn(email, password);
-    } catch (e) {
+
+      // BAŞARILI GİRİŞ SONRASI YÖNLENDİRME BURAYA EKLENDİ
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Giriş başarılı!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Kullanıcıyı RootScreen'e yönlendir ve önceki tüm rotaları temizle
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const RootScreen()),
+              (route) => false,
+        );
+      }
+    } on AuthException catch (e) { // Supabase'e özgü hata yakalama
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Giriş başarısız: ${e.toString()}'),
+            content: Text('Giriş başarısız: ${e.message}'),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } catch (e) { // Diğer genel hatalar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Bilinmeyen bir hata oluştu.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false; // İşlem bittiğinde yüklemeyi durdur
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // 1. Scaffold'un arka plan rengi güncellendi
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -70,70 +107,65 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              // Yeni tasarıma uygun logo
               Image.asset('assets/logos/iris_primary_logo.png', height: 150),
               const SizedBox(height: 50),
 
-              // Yeni tasarıma uygun başlık
               Text(
-                'Seni yeniden görmek güzel!', // Görseldeki metinle uyumlu hale getirildi
+                'Seni yeniden görmek güzel!',
                 textAlign: TextAlign.start,
                 style: AppFonts.poppinsBold(
-                  // 2. Başlık rengi güncellendi
                   color: AppColors.textPrimary,
                   fontSize: 26,
                 ),
               ),
               const SizedBox(height: 30),
 
-              // E-posta TextField yeni tasarıma uyarlandı
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                style: AppFonts.bodySmall(color: AppColors.textPrimary), // İçine yazılan yazıların stili
+                style: AppFonts.bodySmall(color: AppColors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'E-posta',
                   labelStyle: AppFonts.bodyMedium(color: AppColors.textSecondary),
-                  border: OutlineInputBorder( // Varsayılan kenarlık
+                  border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.borderColor),
                   ),
-                  enabledBorder: OutlineInputBorder( // Odaklanmadığında
+                  enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.borderColor),
                   ),
-                  focusedBorder: OutlineInputBorder( // Odaklandığında
+                  focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primaryColor, width: 2), // Ana renk ve daha kalın
+                    borderSide: const BorderSide(color: AppColors.primaryColor, width: 2),
                   ),
-                  filled: true, // Arka plan rengini etkinleştir
-                  fillColor: AppColors.background, // Arka plan rengini beyaz yap
+                  filled: true,
+                  fillColor: AppColors.background,
                 ),
               ),
               const SizedBox(height: 20),
 
-              // Şifre alanı TextField yeni tasarıma uyarlandı
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                style: AppFonts.bodySmall(color: AppColors.textPrimary), // İçine yazılan yazıların stili
+                style: AppFonts.bodySmall(color: AppColors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Şifre',
                   labelStyle: AppFonts.bodyMedium(color: AppColors.textSecondary),
-                  border: OutlineInputBorder( // Varsayılan kenarlık
+                  border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.borderColor),
                   ),
-                  enabledBorder: OutlineInputBorder( // Odaklanmadığında
+                  enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.borderColor),
                   ),
-                  focusedBorder: OutlineInputBorder( // Odaklandığında
+                  focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primaryColor, width: 2), // Ana renk ve daha kalın
+                    borderSide: const BorderSide(color: AppColors.primaryColor, width: 2),
                   ),
-                  filled: true, // Arka plan rengini etkinleştir
-                  fillColor: AppColors.background, // Arka plan rengini beyaz yap
+                  filled: true,
+                  fillColor: AppColors.background,
                 ),
               ),
               const SizedBox(height: 15),
@@ -143,19 +175,16 @@ class _HomePageState extends State<HomePage> {
                 child: TextButton(
                   onPressed: () { /* TODO: Şifremi unuttum fonksiyonu */ },
                   child: Text(
-                    'Şifremi Unuttum', // Görseldeki metinle uyumlu hale getirildi
-                    // 3. TextButton rengi güncellendi
+                    'Şifremi Unuttum',
                     style: AppFonts.bodyMedium(color: AppColors.textButton),
                   ),
                 ),
               ),
               const SizedBox(height: 25),
 
-              // Yeni tasarıma uygun buton
               ElevatedButton(
-                onPressed: _signIn,
+                onPressed: _isLoading ? null : _signIn, // Yüklenirken butonu devre dışı bırak
                 style: ElevatedButton.styleFrom(
-                  // 4. Buton renkleri güncellendi
                   backgroundColor: AppColors.primaryColor,
                   foregroundColor: AppColors.textOnPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -163,11 +192,12 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text('Giriş Yap', style: AppFonts.poppinsBold(fontSize: 16)), // Görseldeki metinle uyumlu hale getirildi
+                child: _isLoading // Yüklenirken Spinner göster
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Text('Giriş Yap', style: AppFonts.poppinsBold(fontSize: 16)),
               ),
               const SizedBox(height: 20),
 
-              // Veya şununla giriş yap metni eklendi
               Text(
                 'Veya şununla giriş yap',
                 textAlign: TextAlign.center,
@@ -175,12 +205,11 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 20),
 
-              // Google ile giriş yap butonu eklendi
               OutlinedButton(
                 onPressed: () { /* TODO: Google ile giriş fonksiyonu */ },
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textPrimary, // Metin rengi
-                  side: const BorderSide(color: AppColors.borderColor), // Kenarlık rengi
+                  foregroundColor: AppColors.textPrimary,
+                  side: const BorderSide(color: AppColors.borderColor),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -189,7 +218,7 @@ class _HomePageState extends State<HomePage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset('assets/logos/google_logo.png', height: 24), // Google logosu
+                    Image.asset('assets/logos/google_logo.png', height: 24),
                     const SizedBox(width: 10),
                     Text('Google', style: AppFonts.poppinsBold(fontSize: 16)),
                   ],
@@ -197,8 +226,6 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 20),
 
-
-              // Kayıt ol yönlendirmesi güncellendi
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -214,7 +241,6 @@ class _HomePageState extends State<HomePage> {
                     },
                     child: Text(
                       'Kayıt Ol',
-                      // 5. Kayıt ol butonunun rengi güncellendi
                       style: AppFonts.poppinsBold(color: AppColors.textButton),
                     ),
                   ),
