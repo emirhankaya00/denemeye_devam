@@ -71,12 +71,12 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               // Yeni tasarıma uygun logo
-              Image.asset('assets/images/logo.png', height: 40),
+              Image.asset('assets/logos/iris_primary_logo.png', height: 150),
               const SizedBox(height: 50),
 
               // Yeni tasarıma uygun başlık
               Text(
-                'Seni yeniden görmek güzel',
+                'Seni yeniden görmek güzel!', // Görseldeki metinle uyumlu hale getirildi
                 textAlign: TextAlign.start,
                 style: AppFonts.poppinsBold(
                   // 2. Başlık rengi güncellendi
@@ -86,36 +86,54 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 30),
 
-              // Yeni tasarıma uygun TextField
+              // E-posta TextField yeni tasarıma uyarlandı
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
+                style: AppFonts.bodySmall(color: AppColors.textPrimary), // İçine yazılan yazıların stili
                 decoration: InputDecoration(
                   labelText: 'E-posta',
                   labelStyle: AppFonts.bodyMedium(color: AppColors.textSecondary),
-                  enabledBorder: const UnderlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.borderColor),
+                  border: OutlineInputBorder( // Varsayılan kenarlık
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.borderColor),
                   ),
-                  focusedBorder: const UnderlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.primaryColor),
+                  enabledBorder: OutlineInputBorder( // Odaklanmadığında
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.borderColor),
                   ),
+                  focusedBorder: OutlineInputBorder( // Odaklandığında
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.primaryColor, width: 2), // Ana renk ve daha kalın
+                  ),
+                  filled: true, // Arka plan rengini etkinleştir
+                  fillColor: AppColors.background, // Arka plan rengini beyaz yap
                 ),
               ),
               const SizedBox(height: 20),
 
-              // Yeni tasarıma uygun şifre alanı
+              // Şifre alanı TextField yeni tasarıma uyarlandı
               TextField(
                 controller: _passwordController,
                 obscureText: true,
+                style: AppFonts.bodySmall(color: AppColors.textPrimary), // İçine yazılan yazıların stili
                 decoration: InputDecoration(
                   labelText: 'Şifre',
                   labelStyle: AppFonts.bodyMedium(color: AppColors.textSecondary),
-                  enabledBorder: const UnderlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.borderColor),
+                  border: OutlineInputBorder( // Varsayılan kenarlık
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.borderColor),
                   ),
-                  focusedBorder: const UnderlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.primaryColor),
+                  enabledBorder: OutlineInputBorder( // Odaklanmadığında
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.borderColor),
                   ),
+                  focusedBorder: OutlineInputBorder( // Odaklandığında
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.primaryColor, width: 2), // Ana renk ve daha kalın
+                  ),
+                  filled: true, // Arka plan rengini etkinleştir
+                  fillColor: AppColors.background, // Arka plan rengini beyaz yap
                 ),
               ),
               const SizedBox(height: 15),
@@ -125,7 +143,7 @@ class _HomePageState extends State<HomePage> {
                 child: TextButton(
                   onPressed: () { /* TODO: Şifremi unuttum fonksiyonu */ },
                   child: Text(
-                    'Şifremi unuttum',
+                    'Şifremi Unuttum', // Görseldeki metinle uyumlu hale getirildi
                     // 3. TextButton rengi güncellendi
                     style: AppFonts.bodyMedium(color: AppColors.textButton),
                   ),
@@ -145,11 +163,42 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text('Giriş yap', style: AppFonts.poppinsBold(fontSize: 16)),
+                child: Text('Giriş Yap', style: AppFonts.poppinsBold(fontSize: 16)), // Görseldeki metinle uyumlu hale getirildi
               ),
               const SizedBox(height: 20),
 
-              // Kayıt ol yönlendirmesi
+              // Veya şununla giriş yap metni eklendi
+              Text(
+                'Veya şununla giriş yap',
+                textAlign: TextAlign.center,
+                style: AppFonts.bodyMedium(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+
+              // Google ile giriş yap butonu eklendi
+              OutlinedButton(
+                onPressed: () { /* TODO: Google ile giriş fonksiyonu */ },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textPrimary, // Metin rengi
+                  side: const BorderSide(color: AppColors.borderColor), // Kenarlık rengi
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset('assets/logos/google_logo.png', height: 24), // Google logosu
+                    const SizedBox(width: 10),
+                    Text('Google', style: AppFonts.poppinsBold(fontSize: 16)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+
+              // Kayıt ol yönlendirmesi güncellendi
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

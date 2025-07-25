@@ -42,28 +42,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             children: const [
               // Her bir tanıtım sayfası burada olacak
               OnboardingPage(
-                imagePath: 'assets/images/iris_login_img.jpg', // Kendi görsellerinizle güncelleyin
-                logoPath: 'assets/logos/iris_white_logo.png',         // Kendi logonuzla güncelleyin
-                title: 'İris\'e Hoş Geldin!',
-                description: 'Güzellik ve bakım rutinin artık parmaklarının ucunda.',
+                imagePath: 'assets/images/iris_login_img.jpg',
+                logoPath: 'assets/logos/iris_white_logo.png',
+                title: 'İris\'e Hoş Geldin! Güzellik ve bakım rutinin artık parmaklarının ucunda.',
               ),
               OnboardingPage(
                 imagePath: 'assets/images/iris_login_img_2.jpg',
                 logoPath: 'assets/logos/iris_white_logo.png',
-                title: 'Anında Randevu Oluştur',
-                description: 'Telefon trafiğine takılmadan, sadece birkaç dokunuşla yerini anında ayırt.',
+                title: 'Anında Randevu Oluştur Telefon trafiğine takılmadan, sadece birkaç dokunuşla yerini anında ayırt.',
               ),
               OnboardingPage(
                 imagePath: 'assets/images/iris_login_img_3.jpg',
                 logoPath: 'assets/logos/iris_white_logo.png',
-                title: 'Takvimini Sen Yönet',
-                description: 'Uzmanını seç, uygun tarih ve saati görüntüle, randevunu kolayca planla.',
+                title: 'Takvimini Sen Yönet Uzmanını seç, uygun tarih ve saati görüntüle, randevunu kolayca planla.',
               ),
               OnboardingPage(
                 imagePath: 'assets/images/onboarding_4.jpg',
-                logoPath: 'assets/images/logo.png',
-                title: 'Tüm Hizmetler Elinin Altında',
-                description: 'Servislerimizi ve uzmanları keşfetmeye başlamak için şimdi giriş yap veya kayıt ol.',
+                logoPath: 'assets/logos/iris_white_logo.png',
+                title: 'Tüm Hizmetler Elinin Altında Servislerimizi ve uzmanlarımızı keşfetmeye başlamak için şimdi giriş yap veya kayıt ol.',
               ),
             ],
           ),
@@ -156,18 +152,51 @@ class OnboardingPage extends StatelessWidget {
   final String imagePath;
   final String logoPath;
   final String title;
-  final String description;
 
   const OnboardingPage({
     super.key,
     required this.imagePath,
     required this.logoPath,
     required this.title,
-    required this.description,
   });
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // Tanımlı kenar boşlukları ve alan yükseklikleri
+    final double logoTopOffset = 40.0;
+    final double textLeftOffset = 40.0; // Metnin soldan boşluğu
+    final double textRightOffset = 40.0; // Metnin sağdan boşluğu
+    final double textBottomOffset = 80.0; // Metnin alttan boşluğu
+
+    // Hedef/varsayılan boyutlar
+    final double targetLogoHeight = 150.0; // Logonun hedef yüksekliği
+    final double targetTitleFontSize = 32.0; // Başlık fontunun hedef boyutu
+    final double fixedTextContainerHeight = 200.0; // Metin için sabit yükseklik sınırı
+    final double minGapBetweenLogoAndText = 20.0; // Logo ve metin arasındaki minimum boşluk
+
+    // Logo, sabit metin yüksekliği ve aralarındaki minimum boşluğun toplam hedef yüksekliği
+    final double requiredTotalContentHeight = targetLogoHeight + fixedTextContainerHeight + minGapBetweenLogoAndText;
+
+    // İçerik için mevcut dikey alan (Logo üst boşluğundan buton alanına kadar)
+    final double availableContentVerticalSpace = screenHeight - logoTopOffset - textBottomOffset;
+
+    double actualLogoHeight = targetLogoHeight;
+    double actualTitleFontSize = targetTitleFontSize;
+
+    // Eğer gerekli toplam içerik yüksekliği, mevcut alandan fazlaysa, boyutları küçült
+    if (requiredTotalContentHeight > availableContentVerticalSpace) {
+      final double scaleFactor = availableContentVerticalSpace / requiredTotalContentHeight;
+
+      actualLogoHeight = targetLogoHeight * scaleFactor;
+      actualTitleFontSize = targetTitleFontSize * scaleFactor;
+
+      // Minimum boyutları garanti altına al
+      actualLogoHeight = actualLogoHeight.clamp(30.0, targetLogoHeight); // Logo min 30px
+      actualTitleFontSize = actualTitleFontSize.clamp(20.0, targetTitleFontSize); // Font min 20px
+    }
+
     return Stack(
       children: [
         // Arka Plan Resmi
@@ -180,28 +209,35 @@ class OnboardingPage extends StatelessWidget {
         // Karartma efekti (Overlay)
         Positioned.fill(
           child: Container(
-            color: Colors.black.withOpacity(0.4), // Resmin üzerine hafif karartma
+            color: Colors.black.withValues(alpha: 0.4), // Doğru kullanım
           ),
         ),
-        // İçerik (logo, başlık, açıklama)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 80.0),
+        // Logo - Üst sol köşeye konumlandırıldı (Boyutu dinamik)
+        Positioned(
+          top: logoTopOffset, // Üstten boşluk
+          left: 0.0, // Logonun sol kenarı 0'dan başlasın
+          child: Image.asset(
+            logoPath,
+            height: actualLogoHeight, // Dinamik yükseklik
+          ),
+        ),
+        // Başlık metni - Altta konumlandırıldı (Boyutu dinamik ve sabit yükseklikte)
+        Positioned(
+          left: textLeftOffset, // Metnin soldan boşluğu 40.0
+          right: textRightOffset, // Metnin sağdan boşluğu 40.0
+          bottom: textBottomOffset, // Alttan boşluk
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.end, // İçeriği alta hizala
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start, // Metin solda hizalı
             children: [
-              Image.asset(logoPath, height: 40), // Logonuz
-              const SizedBox(height: 20),
-              Text(
-                title,
-                style: AppFonts.poppinsBold(fontSize: 32, color: AppColors.textOnPrimary), // Beyaz metin
+              SizedBox(
+                height: fixedTextContainerHeight, // Metin için sabit yükseklik sınırı
+                child: Text(
+                  title,
+                  style: AppFonts.poppinsBold(fontSize: 24, color: AppColors.textOnPrimary), // Dinamik font boyutu
+                  maxLines: 5, // En fazla satır sayısı
+                  overflow: TextOverflow.ellipsis, // Taşma durumunda üç nokta
+                ),
               ),
-              const SizedBox(height: 10),
-              Text(
-                description,
-                style: AppFonts.bodyLarge(color: AppColors.textOnPrimary.withOpacity(0.8)), // Hafif şeffaf beyaz
-              ),
-              const SizedBox(height: 120), // Butonların yerini bırakmak için boşluk
             ],
           ),
         ),

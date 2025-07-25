@@ -1,6 +1,5 @@
 // lib/main.dart
 import 'package:denemeye_devam/view/screens/auth/home_page.dart';
-import 'package:denemeye_devam/view/screens/dashboard/dashboard_screen.dart';
 import 'package:denemeye_devam/view/screens/root_screen.dart';
 import 'package:denemeye_devam/view/view_models/appointments_viewmodel.dart';
 import 'package:denemeye_devam/view/view_models/auth_viewmodel.dart';

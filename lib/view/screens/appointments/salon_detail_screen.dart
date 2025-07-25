@@ -247,7 +247,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
   }
 
   Widget _buildCalendar(BuildContext context, SalonDetailViewModel viewModel) {
-    final DateTime displayDate = viewModel.selectedDate ?? DateTime.now();
+    final DateTime _ = viewModel.selectedDate ?? DateTime.now();
     final List<DateTime> weekDates = List.generate(7, (i) => DateTime.now().add(Duration(days: i)));
 
     // Eğer kullanıcı bir tarih seçtiyse, o haftayı göster

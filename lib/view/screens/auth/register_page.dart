@@ -97,7 +97,7 @@ class _RegisterPageState extends State<RegisterPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               // Yeni tasarıma uygun logo
-              Image.asset('assets/images/logo.png', height: 40),
+              Image.asset('assets/logos/iris_primary_logo.png', height: 150),
               const SizedBox(height: 50),
 
               // Başlıklar güncellendi
@@ -113,15 +113,35 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 30),
 
               // TextField'lar yeni tasarıma uyarlandı
-              _buildTextField(controller: _nameController, labelText: 'Ad'),
+              _buildTextField(
+                controller: _nameController,
+                labelText: 'Ad',
+              ),
               const SizedBox(height: 20),
-              _buildTextField(controller: _surnameController, labelText: 'Soyad'),
+              _buildTextField(
+                controller: _surnameController,
+                labelText: 'Soyad',
+              ),
               const SizedBox(height: 20),
-              _buildTextField(controller: _emailController, labelText: 'E-posta', keyboardType: TextInputType.emailAddress),
+              _buildTextField(
+                controller: _emailController,
+                labelText: 'E-posta',
+                keyboardType: TextInputType.emailAddress,
+                // E-posta için +90 ön eki eklenmez.
+              ),
               const SizedBox(height: 20),
-              _buildTextField(controller: _phoneController, labelText: 'Telefon Numarası', keyboardType: TextInputType.phone),
+              _buildTextField(
+                controller: _phoneController,
+                labelText: 'Telefon Numarası',
+                keyboardType: TextInputType.phone,
+                prefixText: '+90 ', // Telefon numarası için +90 ön eki
+              ),
               const SizedBox(height: 20),
-              _buildTextField(controller: _passwordController, labelText: 'Şifre', obscureText: true),
+              _buildTextField(
+                controller: _passwordController,
+                labelText: 'Şifre',
+                obscureText: true,
+              ),
               const SizedBox(height: 40),
 
               // Buton yeni tasarıma uyarlandı
@@ -168,20 +188,31 @@ class _RegisterPageState extends State<RegisterPage> {
     required String labelText,
     bool obscureText = false,
     TextInputType? keyboardType,
+    String? prefixText, // Yeni prefixText parametresi
   }) {
     return TextField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      style: AppFonts.bodySmall(color: AppColors.textPrimary), // İçine yazılan yazıların stili: küçük ve ince
       decoration: InputDecoration(
         labelText: labelText,
         labelStyle: AppFonts.bodyMedium(color: AppColors.textSecondary),
-        enabledBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.borderColor),
+        prefixText: prefixText, // prefixText'i kullan
+        border: OutlineInputBorder( // Varsayılan kenarlık
+          borderRadius: BorderRadius.circular(12), // Yuvarlak köşeler
+          borderSide: const BorderSide(color: AppColors.borderColor), // Gri kenarlık
         ),
-        focusedBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.primaryColor),
+        enabledBorder: OutlineInputBorder( // Odaklanmadığında
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.borderColor),
         ),
+        focusedBorder: OutlineInputBorder( // Odaklandığında
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primaryColor, width: 2), // Ana renk ve daha kalın
+        ),
+        filled: true, // Arka plan rengini etkinleştir
+        fillColor: AppColors.background, // Arka plan rengini beyaz yap
       ),
     );
   }
