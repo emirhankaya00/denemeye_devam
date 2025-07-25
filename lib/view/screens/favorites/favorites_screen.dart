@@ -1,4 +1,3 @@
-// lib/screens/favorites_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,7 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_fonts.dart';
 import '../../../data/models/saloon_model.dart';
 import '../../view_models/favorites_viewmodel.dart';
-import '../../view_models/search_viewmodel.dart'; // SearchViewModel eklendi
+import '../../view_models/search_viewmodel.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -19,7 +18,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   void initState() {
     super.initState();
-    // Sayfa her açıldığında listenin güncel olduğundan emin olalım
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<FavoritesViewModel>(context, listen: false).fetchFavoriteSaloons();
     });
@@ -27,10 +25,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Hem FavoritesViewModel hem SearchViewModel'daki değişiklikleri dinlemek için Consumer2 kullanıyoruz
     return Consumer2<FavoritesViewModel, SearchViewModel>(
       builder: (context, favoritesViewModel, searchViewModel, child) {
-        // Arama sorgusuna göre filtrelenmiş listeyi elde et
         final List<SaloonModel> displaySaloons = searchViewModel.searchQuery.isEmpty
             ? favoritesViewModel.favoriteSaloons
             : favoritesViewModel.favoriteSaloons.where((saloon) {
@@ -40,10 +36,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         }).toList();
 
         return Scaffold(
-          backgroundColor: AppColors.backgroundColorLight,
-          // AppBar'ı buradan kaldırdık. Artık RootScreen'daki MainApp yönetecek.
+          // 1. Arka plan rengi güncellendi.
+          backgroundColor: AppColors.background,
           body: favoritesViewModel.isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator(color: AppColors.primaryColor))
               : displaySaloons.isEmpty
               ? _buildEmptyFavorites(context, searchViewModel.searchQuery.isNotEmpty)
               : _buildFavoritesList(favoritesViewModel, displaySaloons),
@@ -54,22 +50,28 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   Widget _buildEmptyFavorites(BuildContext context, bool isSearching) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(isSearching ? Icons.search_off : Icons.favorite_border, size: 80, color: AppColors.iconColor.withAlpha(128)),
-          const SizedBox(height: 20),
-          Text(
-            isSearching ? 'Arama sonucunuz bulunamadı.' : 'Henüz favori salonunuz yok.',
-            style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textColorLight),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            isSearching ? 'Farklı bir arama terimi deneyin.' : 'Beğendiğiniz salonları favorilerinize ekleyin!',
-            textAlign: TextAlign.center,
-            style: AppFonts.bodyMedium(color: AppColors.textColorLight),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 2. İkon rengi güncellendi.
+            Icon(isSearching ? Icons.search_off : Icons.favorite_border, size: 80, color: AppColors.iconColor.withOpacity(0.5)),
+            const SizedBox(height: 20),
+            Text(
+              isSearching ? 'Arama sonucunuz bulunamadı.' : 'Henüz favori salonunuz yok.',
+              // 3. Başlık metin rengi güncellendi.
+              style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              isSearching ? 'Farklı bir arama terimi deneyin.' : 'Beğendiğiniz salonları kalbe dokunarak favorilerinize ekleyin!',
+              textAlign: TextAlign.center,
+              // 4. Açıklama metin rengi güncellendi.
+              style: AppFonts.bodyMedium(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -83,24 +85,20 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         return FavoriteSalonCard(
           salon: salon,
           onRemoveFavorite: () => viewModel.toggleFavorite(salon.saloonId),
-          onBookAppointment: () => viewModel.navigateToSalonDetail(context, salon),
         );
       },
     );
   }
 }
 
-// FavoriteSalonCard değişmedi, sadece SaloonModel aldığı için adı güncel
 class FavoriteSalonCard extends StatelessWidget {
   final SaloonModel salon;
   final VoidCallback onRemoveFavorite;
-  final VoidCallback onBookAppointment;
 
   const FavoriteSalonCard({
     super.key,
     required this.salon,
     required this.onRemoveFavorite,
-    required this.onBookAppointment,
   });
 
   @override
@@ -108,7 +106,10 @@ class FavoriteSalonCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
       elevation: 4,
+      shadowColor: Colors.black.withOpacity(0.05),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      // 5. Kart rengi güncellendi.
+      color: AppColors.cardColor,
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Row(
@@ -117,20 +118,24 @@ class FavoriteSalonCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               child: salon.titlePhotoUrl != null && salon.titlePhotoUrl!.isNotEmpty
                   ? Image.network(salon.titlePhotoUrl!, width: 80, height: 80, fit: BoxFit.cover)
-                  : Container(width: 80, height: 80, color: AppColors.backgroundColorDark, child: const Icon(Icons.store)),
+              // 6. Resim yoksa gösterilecek konteyner rengi güncellendi.
+                  : Container(width: 80, height: 80, color: AppColors.borderColor, child: const Icon(Icons.store, color: AppColors.iconColor)),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(salon.saloonName, style: AppFonts.poppinsBold(fontSize: 16)),
-                  Text(salon.saloonAddress ?? 'Adres yok', style: AppFonts.bodySmall(), maxLines: 1),
+                  // 7. Metin renkleri güncellendi.
+                  Text(salon.saloonName, style: AppFonts.poppinsBold(fontSize: 16, color: AppColors.textPrimary)),
+                  const SizedBox(height: 4),
+                  Text(salon.saloonAddress ?? 'Adres bilgisi yok', style: AppFonts.bodySmall(color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis,),
                 ],
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.favorite, color: AppColors.primaryColor),
+              // 8. İkon rengi güncellendi.
+              icon: Icon(Icons.favorite, color: Colors.red.shade400),
               onPressed: onRemoveFavorite,
             ),
           ],

@@ -114,7 +114,7 @@ class SalonCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.tagColorActive,
+                              color: AppColors.primaryColor,
                               borderRadius: BorderRadius.circular(5),
                             ),
                             child: Text('Kampanya', style: AppFonts.bodySmall(color: AppColors.textOnPrimary)),
@@ -142,12 +142,12 @@ class SalonCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.tagColorPassive.withOpacity(0.8),
+        color: AppColors.textOnPrimary.withOpacity(0.8),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         service,
-        style: AppFonts.bodySmall(color: AppColors.textColorDark),
+        style: AppFonts.bodySmall(color: AppColors.textOnPrimary),
       ),
     );
   }
@@ -155,7 +155,7 @@ class SalonCard extends StatelessWidget {
   // Resim yüklenemediğinde gösterilecek yedek widget (Kod tekrarını önlemek için)
   Widget _errorBuilder(BuildContext context, Object? error, StackTrace? stackTrace) {
     return Container(
-      color: AppColors.backgroundColorDark,
+      color: AppColors.primaryColor,
       child: Center(child: Icon(Icons.store, size: 50, color: AppColors.iconColor)),
     );
   }

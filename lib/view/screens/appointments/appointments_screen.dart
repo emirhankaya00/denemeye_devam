@@ -21,7 +21,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   @override
   void initState() {
     super.initState();
-    // Sayfa ilk yüklendiğinde verileri çekmek için ViewModel'ı tetikle
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AppointmentsViewModel>(context, listen: false)
           .fetchAppointments();
@@ -30,12 +29,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Hem AppointmentsViewModel hem de SearchViewModel'ı dinle
     return Consumer2<AppointmentsViewModel, SearchViewModel>(
       builder: (context, appointmentsViewModel, searchViewModel, child) {
         final allAppointments = appointmentsViewModel.allAppointments;
 
-        // Arama sorgusuna göre randevuları filtrele
         final List<ReservationModel> filteredAppointments =
         searchViewModel.searchQuery.isEmpty
             ? allAppointments
@@ -50,7 +47,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         }).toList();
 
         final now = DateTime.now();
-        // Gelecek ve geçmiş randevuları ayır
         final List<ReservationModel> upcomingAppointments =
         filteredAppointments.where((r) {
           final reservationDateTime = r.reservationDate.add(Duration(
@@ -61,7 +57,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                   r.status == ReservationStatus.pending);
         }).toList();
 
-        // TODO : EMİRHAN BURAYA KODU EKLEYECEN DAVAR GİBİ HEPSİNİ ÇEKMEN GEREKECEK
         final List<ReservationModel> allPastAppointments =
         filteredAppointments.where((r) {
           final reservationDateTime = r.reservationDate.add(Duration(
@@ -76,7 +71,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         final List<ReservationModel> pastAppointments = allPastAppointments.take(5).toList();
 
         return Scaffold(
-          backgroundColor: AppColors.backgroundColorLight,
+          // 1. Arka plan rengi güncellendi
+          backgroundColor: AppColors.background,
           body: appointmentsViewModel.isLoading
               ? const Center(child: CircularProgressIndicator())
               : RefreshIndicator(
@@ -89,8 +85,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 children: [
                   Text(
                     'Gelecek Randevularım',
+                    // 2. Başlık metin rengi güncellendi
                     style: AppFonts.poppinsBold(
-                        fontSize: 18, color: AppColors.textColorDark),
+                        fontSize: 18, color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 10),
                   upcomingAppointments.isEmpty
@@ -109,8 +106,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                   const SizedBox(height: 30),
                   Text(
                     'Geçmiş Randevularım',
+                    // 3. Başlık metin rengi güncellendi
                     style: AppFonts.poppinsBold(
-                        fontSize: 18, color: AppColors.textColorDark),
+                        fontSize: 18, color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 10),
                   pastAppointments.isEmpty
@@ -152,11 +150,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
+        // 4. Kart rengi güncellendi
         color: AppColors.cardColor,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.05), // Hafif gölge
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -170,7 +169,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             width: 70,
             height: 70,
             decoration: BoxDecoration(
-              color: AppColors.primaryColor.withValues(alpha: 0.8),
+              color: AppColors.primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(15),
               image: reservation.saloon?.titlePhotoUrl != null &&
                   reservation.saloon!.titlePhotoUrl!.isNotEmpty
@@ -182,8 +181,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             ),
             child: reservation.saloon?.titlePhotoUrl == null ||
                 reservation.saloon!.titlePhotoUrl!.isEmpty
-                ? const Center(
-                child: Icon(Icons.cut, color: Colors.white, size: 35))
+                ? Center(
+                child: Icon(Icons.cut, color: AppColors.primaryColor.withOpacity(0.6), size: 35))
                 : null,
           ),
           const SizedBox(width: 15),
@@ -198,8 +197,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     Expanded(
                       child: Text(
                         reservation.saloon?.saloonName ?? 'Salon Bilgisi Yok',
+                        // 5. Kart başlık rengi güncellendi
                         style: AppFonts.poppinsBold(
-                            fontSize: 18, color: AppColors.textColorDark),
+                            fontSize: 18, color: AppColors.textPrimary),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
@@ -223,7 +223,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                                   TextButton(
                                       onPressed: () =>
                                           Navigator.of(context).pop(true),
-                                      child: const Text('Evet, İptal Et')),
+                                      child: Text('Evet, İptal Et', style: TextStyle(color: Colors.red.shade700))),
                                 ],
                               ),
                             );
@@ -231,7 +231,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                               try {
                                 await appointmentsViewModel.cancelAppointment(
                                     reservation.reservationId);
-                                if (context.mounted) { // <-- YENİ EKLENDİ
+                                if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                         content: Text('Randevu başarıyla iptal edildi.'),
@@ -240,16 +240,17 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                                 }
                               } catch (e) {
                                 if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text('Hata: ${e.toString()}'),
-                                      backgroundColor: Colors.red),
-                                );
-                              }
-                            }}
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text('Hata: ${e.toString()}'),
+                                        backgroundColor: Colors.red),
+                                  );
+                                }
+                              }}
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red.shade400,
+                            backgroundColor: Colors.red.withOpacity(0.1),
+                            elevation: 0,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(15)),
                             padding:
@@ -257,9 +258,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          child: const Text('İptal et',
+                          child: Text('İptal et',
                               style:
-                              TextStyle(color: Colors.white, fontSize: 12)),
+                              TextStyle(color: Colors.red.shade700, fontSize: 12)),
                         ),
                       ),
                   ],
@@ -267,12 +268,14 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 const SizedBox(height: 5),
                 Text(
                   'Yapılacak İşlem: ${reservation.service?.serviceName ?? 'Bilinmiyor'}',
-                  style: AppFonts.bodySmall(color: AppColors.textColorLight),
+                  // 6. Kart metin rengi güncellendi
+                  style: AppFonts.bodySmall(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Tarih: ${DateFormat.yMMMMd('tr_TR').format(reservation.reservationDate)} Saat: ${reservation.reservationTime}',
-                  style: AppFonts.bodyMedium(color: AppColors.textColorLight),
+                  // 7. Kart metin rengi güncellendi
+                  style: AppFonts.bodyMedium(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 5),
                 Text(
@@ -296,13 +299,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         child: Column(
           children: [
             Icon(isSearching ? Icons.search_off : Icons.event_busy,
-                size: 80, color: AppColors.iconColor.withAlpha(128)),
+                // 8. İkon rengi güncellendi
+                size: 80, color: AppColors.iconColor.withOpacity(0.5)),
             const SizedBox(height: 20),
             Text(
               isSearching
                   ? 'Arama kriterlerinize uygun randevu bulunamadı.'
                   : message,
-              style: AppFonts.bodyMedium(color: AppColors.textColorLight),
+              // 9. Mesaj metin rengi güncellendi
+              style: AppFonts.bodyMedium(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],

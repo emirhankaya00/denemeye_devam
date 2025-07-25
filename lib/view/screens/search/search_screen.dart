@@ -1,5 +1,3 @@
-// lib/screens/search_screen.dart DOSYASINI GÜNCELLEYİN
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -13,11 +11,11 @@ class SearchScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Artık StatefulWidget'a gerek yok. Consumer ile ViewModel'ı dinleyeceğiz.
     return Consumer<SearchViewModel>(
       builder: (context, viewModel, child) {
         return Scaffold(
-          backgroundColor: AppColors.backgroundColorLight,
+          // 1. Arka plan rengi güncellendi.
+          backgroundColor: AppColors.background,
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -26,8 +24,8 @@ class SearchScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
                 child: Text(
                   'Kategoriler',
-                  style: AppFonts.poppinsBold(
-                      fontSize: 18, color: AppColors.textColorDark),
+                  // 2. Başlık rengi güncellendi.
+                  style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textPrimary),
                 ),
               ),
               SizedBox(
@@ -45,39 +43,40 @@ class SearchScreen extends StatelessWidget {
                         label: Text(category),
                         selected: isSelected,
                         onSelected: (selected) {
-                          // Kategori seçimi için ViewModel'daki metodu çağır
                           viewModel.selectCategory(category);
                         },
-                        selectedColor: AppColors.accentColor,
-                        backgroundColor: AppColors.tagColorPassive,
+                        // 3. Chip renkleri güncellendi.
+                        selectedColor: AppColors.primaryColor,
+                        backgroundColor: AppColors.cardColor,
                         labelStyle: AppFonts.bodyMedium(
-                          color: isSelected ? Colors.white : AppColors.textColorDark,
+                          color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
                         ).copyWith(
-                          fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                           side: BorderSide(
-                            color: isSelected
-                                ? AppColors.accentColor
-                                : AppColors.dividerColor.withValues(alpha: 0.5),
+                            color: isSelected ? Colors.transparent : AppColors.borderColor,
                           ),
                         ),
-                        elevation: isSelected ? 3 : 1,
+                        elevation: 0,
+                        pressElevation: 0,
                       ),
                     );
                   },
                 ),
               ),
-              const SizedBox(height: 10),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Divider(color: AppColors.borderColor, height: 1),
+              ),
 
               // --- ARAMA SONUÇLARI BÖLÜMÜ ---
               Expanded(
                 child: viewModel.isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.primaryColor))
                     : viewModel.filteredSaloons.isEmpty
-                    ? _buildNoResultsFound()
+                    ? _buildNoResultsFound(viewModel)
                     : _buildSearchResultsList(viewModel),
               ),
             ],
@@ -88,27 +87,32 @@ class SearchScreen extends StatelessWidget {
   }
 
   // "Sonuç Bulunamadı" mesajını gösteren widget
-  Widget _buildNoResultsFound() {
+  Widget _buildNoResultsFound(SearchViewModel viewModel) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off,
-              size: 80, color: AppColors.textColorLight.withValues(alpha: 0.5)),
-          const SizedBox(height: 20),
-          Text(
-            'Arama sonucunuz bulunamadı.',
-            style: AppFonts.poppinsBold(
-                fontSize: 18,
-                color: AppColors.textColorLight.withValues(alpha: 0.8)),
-          ),
-          Text(
-            'Farklı bir kelime veya kategoriyle arama yapmayı deneyin.',
-            textAlign: TextAlign.center,
-            style: AppFonts.bodyMedium(
-                color: AppColors.textColorLight.withValues(alpha: 0.6)),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 4. İkon rengi güncellendi.
+            Icon(Icons.search_off, size: 80, color: AppColors.iconColor.withOpacity(0.5)),
+            const SizedBox(height: 20),
+            Text(
+              // Arama sorgusu varsa daha anlamlı bir mesaj göster
+              viewModel.searchQuery.isNotEmpty
+                  ? '"${viewModel.searchQuery}" için sonuç bulunamadı'
+                  : 'Sonuç bulunamadı',
+              // 5. Metin renkleri güncellendi.
+              style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Farklı bir kelime veya kategoriyle aramayı deneyin.',
+              textAlign: TextAlign.center,
+              style: AppFonts.bodyMedium(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -121,13 +125,12 @@ class SearchScreen extends StatelessWidget {
       itemBuilder: (context, index) {
         final salon = viewModel.filteredSaloons[index];
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          padding: const EdgeInsets.only(bottom: 16.0), // Kartlar arası boşluk
           child: SalonCard(
             salonId: salon.saloonId,
             name: salon.saloonName,
-            rating: '4.8', // TODO: Puanlama sistemini entegre et
+            rating: '4.8', // Dinamik veri ile değiştirilecek
             services: salon.services.map((s) => s.serviceName).toList(),
-            // hasCampaign: salon.hasCampaign, // TODO: Kampanya modelini entegre et
           ),
         );
       },

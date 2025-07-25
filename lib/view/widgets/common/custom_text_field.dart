@@ -36,14 +36,14 @@ class _CustomTextFieldState extends State<CustomTextField> {
     final bool isPassword = widget.obscureText;
 
     // Focus durumuna göre border ve shadow renklerini ayarla
-    final Color borderColor = widget.isFocused ? AppColors.accentColor : AppColors.borderColor;
-    final Color shadowColor = widget.isFocused ? AppColors.accentColor.withValues(alpha: 0.3) : Colors.transparent;
+    final Color borderColor = widget.isFocused ? AppColors.primaryColor : AppColors.borderColor;
+    final Color shadowColor = widget.isFocused ? AppColors.primaryColor.withValues(alpha: 0.3) : Colors.transparent;
     final double elevation = widget.isFocused ? 8.0 : 3.0; // Focuslandığında daha belirgin yükselsin
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250), // Animasyon süresi
       decoration: BoxDecoration(
-        color: AppColors.textFieldFillColor, // İç dolgu rengi
+        color: AppColors.textPrimary, // İç dolgu rengi
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderColor, width: widget.isFocused ? 2.0 : 1.0),
         boxShadow: [
@@ -61,25 +61,25 @@ class _CustomTextFieldState extends State<CustomTextField> {
         obscureText: widget.obscureText,
         keyboardType: widget.keyboardType,
         maxLines: widget.maxLines,
-        cursorColor: AppColors.accentColor, // İmleç rengi
+        cursorColor: AppColors.primaryColor, // İmleç rengi
 
         style: TextStyle(
-          color: AppColors.textColorDark, // Yazı rengi
+          color: AppColors.textPrimary, // Yazı rengi
           fontSize: 16,
         ),
         decoration: InputDecoration(
           labelText: widget.labelText,
           hintText: widget.hintText,
           labelStyle: TextStyle(
-            color: widget.isFocused ? AppColors.accentColor : AppColors.textColorLight,
+            color: widget.isFocused ? AppColors.primaryColor : AppColors.textSecondary,
           ),
           hintStyle: TextStyle(
-            color: AppColors.textColorLight.withValues(alpha:0.6),
+            color: AppColors.textOnPrimary.withValues(alpha:0.6),
           ),
           prefixIcon: widget.prefixIcon != null
               ? Icon(
             widget.prefixIcon,
-            color: widget.isFocused ? AppColors.accentColor : AppColors.iconColor,
+            color: widget.isFocused ? AppColors.primaryColor : AppColors.iconColor,
           )
               : null,
           suffixIcon: isPassword
