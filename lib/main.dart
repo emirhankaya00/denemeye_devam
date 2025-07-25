@@ -1,4 +1,5 @@
 // lib/main.dart
+import 'package:denemeye_devam/screens/dashboard_screen.dart';
 import 'package:denemeye_devam/viewmodels/appointments_viewmodel.dart';
 import 'package:denemeye_devam/viewmodels/auth_viewmodel.dart';
 import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
@@ -61,7 +62,7 @@ class MyApp extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
       ),
-      home: isLoggedIn ? const RootScreen() : const HomePage(),
+      home: isLoggedIn ? const RootScreen() : const DashboardScreen(),
     );
   }
 }

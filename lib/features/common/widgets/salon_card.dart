@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:denemeye_devam/core/app_colors.dart';
-import 'package:denemeye_devam/core/app_fonts.dart'; // Font stillerini kullanmak için eklendi
-
-import 'package:denemeye_devam/features/appointments/screens/salon_detail_screen.dart'; // Yeni detay sayfamızı import ettik
+import 'package:denemeye_devam/core/app_fonts.dart';
+import 'package:denemeye_devam/features/appointments/screens/salon_detail_screen.dart';
 
 class SalonCard extends StatelessWidget {
   final String salonId;
@@ -10,7 +9,7 @@ class SalonCard extends StatelessWidget {
   final String rating;
   final List<String> services;
   final bool hasCampaign;
-  final String? imagePath; // Opsiyonel hale getirdik, eğer görsel yoksa null olabilir
+  final String? imagePath;
 
   const SalonCard({
     super.key,
@@ -19,175 +18,144 @@ class SalonCard extends StatelessWidget {
     required this.rating,
     required this.services,
     this.hasCampaign = false,
-    this.imagePath, // Artık varsayılan bir yol atamıyoruz, dışarıdan gelmezse null kalır.
+    this.imagePath,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Ekran genişliğine göre kart genişliğini ayarlıyoruz.
-    // Örneğin, ekranın %45'i kadar, bu sayede yan yana iki kart rahat sığabilir ve boşluk kalır.
     final screenWidth = MediaQuery.of(context).size.width;
-    final cardWidth = screenWidth * 0.45; // Ekran genişliğinin %45'i
+    final cardWidth = screenWidth * 0.45;
 
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SalonDetailScreen(salonId: salonId),
-          ),
-        );
-      },
-      borderRadius: BorderRadius.circular(15),
-      child: Container(
-        // Kartın genişliğini ve sağındaki boşluğu ayarlıyoruz.
-        margin: const EdgeInsets.only(right: 15, bottom: 15), // Sağdan 15, alttan 15 boşluk
-        width: cardWidth, // Responsive genişlik
-        height: 220, // Kartın yüksekliğini biraz daha azalttık
-        decoration: BoxDecoration(
-          color: AppColors.cardColor,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.textColorLight.withValues(alpha: 0.15),
-              spreadRadius: 2,
-              blurRadius: 10,
-              offset: const Offset(0, 5),
+    // --- DEĞİŞİKLİKLER BURADA BAŞLIYOR ---
+
+    // 1. En dışa Card widget'ını koyduk. Bu bizim TUVALİMİZ.
+    // Gölgeyi (elevation), şekli (shape) ve rengi (color) artık o yönetiyor.
+    return Card(
+      margin: const EdgeInsets.only(right: 15, bottom: 15),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      color: AppColors.cardColor,
+      elevation: 5,
+      clipBehavior: Clip.antiAlias, // Bu, tıklama efektinin kart dışına taşmasını engeller. Çok şık durur.
+
+      // 2. InkWell'i Card'ın içine, Stack'in dışına koyduk.
+      // Artık üzerine mürekkebi damlatacağı bir tuvali var!
+      // Stack'i sarmalamasının sebebi, kartın tamamının tıklanabilir olmasını sağlamak.
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SalonDetailScreen(salonId: salonId),
             ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Salon Resmi (Kartı kaplayacak şekilde)
-            Positioned.fill(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: imagePath != null && imagePath!.isNotEmpty
-                    ? (imagePath!.startsWith('http')
-                    ? Image.network(
-                  imagePath!,
-                  fit: BoxFit.cover,
-                  // Resim yüksekliği Stack tarafından yönetildiği için burada fixed yükseklik kaldırdık.
-                  errorBuilder: (context, error, stackTrace) =>
-                      Container(
-                        color: AppColors.backgroundColorDark,
-                        child: Center(child: Icon(Icons.store, size: 50, color: AppColors.iconColor)),
-                      ),
-                )
-                    : Image.asset( // Eğer URL değilse asset olarak dene
-                  imagePath!,
-                  fit: BoxFit.cover,
-                  // Resim yüksekliği Stack tarafından yönetildiği için burada fixed yükseklik kaldırdık.
-                  errorBuilder: (context, error, stackTrace) =>
-                      Container(
-                        color: AppColors.backgroundColorDark,
-                        child: Center(child: Icon(Icons.store, size: 50, color: AppColors.iconColor)),
-                      ),
-                ))
-                    : Container(
-                  color: AppColors.backgroundColorDark,
-                  child: Center(child: Icon(Icons.store, size: 50, color: AppColors.iconColor)),
+          );
+        },
+        child: SizedBox( // Sadece boyut vermek için artık Container yerine daha hafif olan SizedBox kullanıyoruz.
+          width: cardWidth,
+          height: 220,
+          child: Stack(
+            children: [
+              // Salon Resmi (Kartı kaplayacak şekilde)
+              // Bu kısım aynı kalıyor, mükemmel çalışıyor.
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(15.0), // Card'ın köşeleriyle uyumlu olsun
+                  child: imagePath != null && imagePath!.isNotEmpty
+                      ? (imagePath!.startsWith('http')
+                      ? Image.network(imagePath!, fit: BoxFit.cover, errorBuilder: _errorBuilder)
+                      : Image.asset(imagePath!, fit: BoxFit.cover, errorBuilder: _errorBuilder))
+                      : _errorBuilder(context, null, null),
                 ),
               ),
-            ),
 
-            // Siyah Gradient Overlay (Resmin üzerinde, alttan başlayacak)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent, // Üst kısım şeffaf
-                      Colors.black.withValues(alpha: 0.1),
-                      Colors.black.withValues(alpha: 0.6), // Alt kısım daha koyu
-                    ],
-                    stops: const [0.5, 0.7, 1.0], // Gradient'ın dağılımı
-                  ),
-                ),
-              ),
-            ),
-
-            // Metin İçeriği (Gradient'in üzerinde)
-            Positioned(
-              bottom: 12, // Alt padding
-              left: 12, // Sol padding
-              right: 12, // Sağ padding
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Salon Adı
-                  Text(
-                    name,
-                    style: AppFonts.poppinsBold(
-                      fontSize: 16, // Yazı boyutu biraz küçüldü
-                      color: AppColors.textOnPrimary, // Beyaz metin
+              // Siyah Gradient Overlay (Bu da mükemmel)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(15.0),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.1),
+                        Colors.black.withOpacity(0.6),
+                      ],
+                      stops: const [0.5, 0.7, 1.0],
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  // Yıldızlar ve Puan
-                  Row(
-                    children: [
-                      Icon(Icons.star, color: AppColors.starColor, size: 16), // İkon boyutu
-                      const SizedBox(width: 4),
-                      Text(
-                        rating,
-                        style: AppFonts.bodyMedium(
-                          color: AppColors.textOnPrimary, // Beyaz metin
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Kampanya Etiketi (Eğer varsa)
-                      if (hasCampaign)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.tagColorActive,
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: Text(
-                            'Kampanya',
-                            style: AppFonts.bodySmall( // bodySmall ile devam
-                              color: AppColors.textOnPrimary, // Beyaz metin
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8), // Boşluk
-                  // Hizmet Etiketleri
-                  Wrap(
-                    spacing: 5, // Hizmet etiketleri arası boşluk
-                    runSpacing: 5, // Satırlar arası boşluk
-                    children: services.map((service) => _buildServiceTag(service)).toList(),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+
+              // Metin İçeriği (Bu da mükemmel)
+              Positioned(
+                bottom: 12,
+                left: 12,
+                right: 12,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: AppFonts.poppinsBold(fontSize: 16, color: AppColors.textOnPrimary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.star, color: AppColors.starColor, size: 16),
+                        const SizedBox(width: 4),
+                        Text(rating, style: AppFonts.bodyMedium(color: AppColors.textOnPrimary)),
+                        const SizedBox(width: 8),
+                        if (hasCampaign)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.tagColorActive,
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text('Kampanya', style: AppFonts.bodySmall(color: AppColors.textOnPrimary)),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 5,
+                      runSpacing: 5,
+                      children: services.map((service) => _buildServiceTag(service)).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // Hizmet Etiketi Oluşturucu Fonksiyon
+  // Hizmet Etiketi Oluşturucu Fonksiyon (Bu da mükemmel)
   Widget _buildServiceTag(String service) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.tagColorPassive.withValues(alpha: 0.8), // Hafif şeffaf pasif etiket
+        color: AppColors.tagColorPassive.withOpacity(0.8),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         service,
-        style: AppFonts.bodySmall(
-          color: AppColors.textColorDark, // Koyu metin
-        ),
+        style: AppFonts.bodySmall(color: AppColors.textColorDark),
       ),
+    );
+  }
+
+  // Resim yüklenemediğinde gösterilecek yedek widget (Kod tekrarını önlemek için)
+  Widget _errorBuilder(BuildContext context, Object? error, StackTrace? stackTrace) {
+    return Container(
+      color: AppColors.backgroundColorDark,
+      child: Center(child: Icon(Icons.store, size: 50, color: AppColors.iconColor)),
     );
   }
 }
