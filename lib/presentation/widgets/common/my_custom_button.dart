@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/core/app_colors.dart';
-import 'package:denemeye_devam/core/app_fonts.dart'; // app_fonts.dart dosyanızın yolu
+
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_fonts.dart'; // app_fonts.dart dosyanızın yolu
 
 class MyCustomButton extends StatelessWidget {
   final VoidCallback onPressed;

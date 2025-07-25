@@ -1,19 +1,18 @@
 // lib/main.dart
-import 'package:denemeye_devam/screens/dashboard_screen.dart';
-import 'package:denemeye_devam/viewmodels/appointments_viewmodel.dart';
-import 'package:denemeye_devam/viewmodels/auth_viewmodel.dart';
-import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
-import 'package:denemeye_devam/viewmodels/favorites_viewmodel.dart';
-import 'package:denemeye_devam/viewmodels/search_viewmodel.dart';
+import 'package:denemeye_devam/presentation/screens/dashboard/dashboard_screen.dart';
+import 'package:denemeye_devam/presentation/screens/root_screen.dart';
+import 'package:denemeye_devam/presentation/view_models/appointments_viewmodel.dart';
+import 'package:denemeye_devam/presentation/view_models/auth_viewmodel.dart';
+import 'package:denemeye_devam/presentation/view_models/dashboard_viewmodel.dart';
+import 'package:denemeye_devam/presentation/view_models/favorites_viewmodel.dart';
+import 'package:denemeye_devam/presentation/view_models/search_viewmodel.dart';
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/core/app_colors.dart';
-import 'package:denemeye_devam/screens/root_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart'; // flutter_dotenv import edildi
 
-import 'features/auth/screens/home_page.dart';
+import 'core/theme/app_colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

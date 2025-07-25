@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:denemeye_devam/core/app_colors.dart'; // Renkler için AppColors kullanıyorsan
+
+import '../../../core/theme/app_colors.dart'; // Renkler için AppColors kullanıyorsan
 
 class CustomTextField extends StatefulWidget {
   final TextEditingController? controller;
