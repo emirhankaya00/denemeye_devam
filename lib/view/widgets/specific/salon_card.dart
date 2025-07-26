@@ -1,5 +1,3 @@
-// lib/view/widgets/specific/salon_card.dart
-
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_fonts.dart';
@@ -7,7 +5,6 @@ import '../../screens/appointments/salon_detail_screen.dart';
 import '../../../data/repositories/supabase_repository.dart';
 
 class SalonCard extends StatelessWidget {
-  // ... (parametreler aynı kalıyor)
   final String salonId;
   final String name;
   final String description;
@@ -31,10 +28,8 @@ class SalonCard extends StatelessWidget {
     this.showEditButton = false,
   });
 
-
   @override
   Widget build(BuildContext context) {
-    // ... (build metodunun üst kısmı aynı kalıyor)
     final supabaseRepo = SupabaseRepository();
 
     return GestureDetector(
@@ -48,7 +43,7 @@ class SalonCard extends StatelessWidget {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16.0),
-        height: 350,
+        height: 360, // Taşma hatasını önlemek için güvenli yükseklik
         child: Stack(
           alignment: Alignment.topCenter,
           children: [
@@ -61,7 +56,7 @@ class SalonCard extends StatelessWidget {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 65, 16, 16),
-                  child: _buildInfoColumn(context),
+                  child: _buildInfoColumn(context), // context'i gönderiyoruz
                 ),
               ),
             ),
@@ -107,6 +102,7 @@ class SalonCard extends StatelessWidget {
     );
   }
 
+  /// Bilgi sütununu oluşturan yardımcı metot
   Widget _buildInfoColumn(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,7 +113,6 @@ class SalonCard extends StatelessWidget {
           children: [
             Text(
               name,
-              // DEĞİŞİKLİK 1: Kart başlığı KALIN Poppins oldu.
               style: AppFonts.poppinsCardTitle(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -155,7 +150,7 @@ class SalonCard extends StatelessWidget {
           ],
         ),
         SizedBox(
-          height: 30, // Dikeyde daha ince olması için yükseklik azaltıldı.
+          height: 30,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: services.length,
@@ -168,10 +163,10 @@ class SalonCard extends StatelessWidget {
     );
   }
 
+  /// Hizmet etiketini oluşturan fonksiyon
   Widget _buildServiceTag(String service) {
     return Container(
       margin: const EdgeInsets.only(right: 8.0),
-      // DEĞİŞİKLİK 2: Dikey padding azaltılarak etiket daha ince yapıldı.
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.primaryColor.withValues(alpha: 0.1),
@@ -187,8 +182,8 @@ class SalonCard extends StatelessWidget {
     );
   }
 
+  /// Resim yüklenemediğinde gösterilecek yedek widget
   Widget _errorBuilder(BuildContext context, Object? error, StackTrace? stackTrace) {
-    // ... (değişiklik yok)
     return Container(
       decoration: BoxDecoration(
         color: AppColors.borderColor,
