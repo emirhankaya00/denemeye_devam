@@ -1,17 +1,15 @@
-// lib/view/view_models/dashboard_viewmodel.dart
-
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/saloon_model.dart';
 import '../../data/repositories/saloon_repository.dart';
 
+/// Ana sayfanın (Dashboard) tüm veri ve durum yönetimini üstlenir.
 class DashboardViewModel extends ChangeNotifier {
   final SaloonRepository _saloonRepository = SaloonRepository(Supabase.instance.client);
 
-  /// --- KESİN ÇÖZÜM: Arayüz (View) ve Veritabanı (DB) ile UYUMLU KATEGORİLER ---
-  /// Buradaki anahtarlar ('Saç Hizmetleri' vb.) artık dashboard_screen.dart'taki
-  /// kategori listesiyle birebir aynı.
-  /// İçindeki servis listeleri ise doğrudan sizin veritabanınızdan alınmıştır.
+  /// Sanal kategoriler. Arayüz, bu map'in anahtarlarını ('Saç Hizmetleri' vb.)
+  /// kategori isimleri olarak dinamik bir şekilde çeker.
+  /// Bu yapı, kategori mantığını tek bir yerden yönetmeyi sağlar.
   final Map<String, List<String>> virtualCategories = {
     'Saç Hizmetleri': [
       'Saç Kesim',
@@ -36,6 +34,11 @@ class DashboardViewModel extends ChangeNotifier {
     ]
   };
 
+  /// **DÜZELTME: Arayüzün kategori isimlerini dinamik olarak almasını sağlayan getter.**
+  /// Bu sayede arayüzdeki kategori listesi, her zaman buradaki `virtualCategories`
+  /// haritasının anahtarlarıyla senkronize olur.
+  List<String> get categoryNames => virtualCategories.keys.toList();
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -51,11 +54,14 @@ class DashboardViewModel extends ChangeNotifier {
   List<SaloonModel> _categorySaloons = [];
   List<SaloonModel> get categorySaloons => _categorySaloons;
 
+  /// Yükleme durumunu günceller ve arayüzü bilgilendirir.
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
   }
 
+  /// Ana sayfada gösterilecek tüm temel listeleri (yakınlardakiler, en iyiler vb.)
+  /// eş zamanlı olarak çeker.
   Future<void> fetchDashboardData() async {
     _setLoading(true);
     try {
@@ -76,11 +82,13 @@ class DashboardViewModel extends ChangeNotifier {
     }
   }
 
+  /// Tıklanan bir kategoriye ait salonları getirir.
   Future<void> fetchSaloonsByCategory(String categoryName) async {
     _setLoading(true);
-    _categorySaloons = [];
+    _categorySaloons = []; // Yeni arama öncesi eski sonuçları temizle
     notifyListeners();
 
+    // Verilen kategori adına göre hizmet isimlerini haritadan bulur.
     final serviceNames = virtualCategories[categoryName] ?? [];
 
     if (serviceNames.isEmpty) {

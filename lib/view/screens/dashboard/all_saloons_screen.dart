@@ -41,7 +41,7 @@ class AllSaloonsScreen extends StatelessWidget {
               salonId: salon.saloonId,
               name: salon.saloonName,
               description: salon.saloonDescription ?? 'Açıklama mevcut değil.',
-              rating: '4.1', // Dinamik olarak gelmeli
+              rating: salon.rating, // Dinamik olarak gelmeli
               location: salon.saloonAddress?.split(',').first ?? 'Konum Yok',
               distance: '5 Km', // Bu değer hesaplanmalı
               services: serviceNames.isNotEmpty ? serviceNames : ["Hizmet Yok"],

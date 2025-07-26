@@ -79,7 +79,7 @@ class _CategorySaloonsScreenState extends State<CategorySaloonsScreen> {
                   name: salon.saloonName,
                   description: salon.saloonDescription ?? 'Açıklama mevcut değil.',
                   // TODO: Bu veriler dinamik olarak modelden gelmeli.
-                  rating: '4.1',
+                  rating: salon.rating,
                   location: salon.saloonAddress?.split(',').first ?? 'Konum Yok',
                   distance: '5 Km', // Bu değer hesaplanmalı
                   services: serviceNames.isNotEmpty ? serviceNames : ["Hizmet Yok"],

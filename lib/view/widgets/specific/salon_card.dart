@@ -4,11 +4,12 @@ import '../../../core/theme/app_fonts.dart';
 import '../../screens/appointments/salon_detail_screen.dart';
 import '../../../data/repositories/supabase_repository.dart';
 
+/// Salonları listeleyen ekranlarda kullanılan, standart ve yeniden kullanılabilir kart widget'ı.
 class SalonCard extends StatelessWidget {
   final String salonId;
   final String name;
   final String description;
-  final String rating;
+  final double rating; // DÜZELTME: Veri tipi 'double' olarak doğru şekilde tanımlı.
   final String location;
   final String distance;
   final List<String> services;
@@ -30,10 +31,9 @@ class SalonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final supabaseRepo = SupabaseRepository();
-
     return GestureDetector(
       onTap: () {
+        // Karta tıklandığında, salonun ID'si ile detay sayfasına yönlendir.
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -43,23 +43,26 @@ class SalonCard extends StatelessWidget {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16.0),
-        height: 360, // Taşma hatasını önlemek için güvenli yükseklik
+        height: 360, // Sabit yükseklik, taşma sorunlarını engeller.
         child: Stack(
           alignment: Alignment.topCenter,
           children: [
+            // Kartın alt beyaz kısmı
             Padding(
               padding: const EdgeInsets.only(top: 100.0),
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(15),
                   color: AppColors.cardColor,
+
                 ),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 65, 16, 16),
-                  child: _buildInfoColumn(context), // context'i gönderiyoruz
+                  child: _buildInfoColumn(context),
                 ),
               ),
             ),
+            // Kartın üst resim kısmı
             SizedBox(
               height: 150,
               width: double.infinity,
@@ -79,12 +82,15 @@ class SalonCard extends StatelessWidget {
                       top: 8,
                       right: 8,
                       child: Material(
-                        color: Colors.black.withValues(alpha: 0.5),
+                        color: Colors.black.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(30),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(30),
                           onTap: () {
-                            supabaseRepo.uploadSalonImageAndUpdate(salonId);
+                            // TODO: Bu repository'yi doğrudan burada oluşturmak yerine
+                            // Provider veya GetIt gibi bir DI (Dependency Injection) yapısıyla
+                            // yönetmek daha iyi bir pratiktir.
+                            SupabaseRepository().uploadSalonImageAndUpdate(salonId);
                           },
                           child: const Padding(
                             padding: EdgeInsets.all(8.0),
@@ -102,12 +108,13 @@ class SalonCard extends StatelessWidget {
     );
   }
 
-  /// Bilgi sütununu oluşturan yardımcı metot
+  /// Kartın içindeki bilgi sütununu oluşturan yardımcı metod.
   Widget _buildInfoColumn(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        // Salon Adı, Açıklama ve Puan Bilgileri
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -129,7 +136,9 @@ class SalonCard extends StatelessWidget {
               children: [
                 const Icon(Icons.star, color: AppColors.starColor, size: 18),
                 const SizedBox(width: 4),
-                Text(rating, style: AppFonts.bodyMedium(color: AppColors.textPrimary)),
+                // --- DÜZELTME: 'double' olan puanı 'String'e çeviriyoruz. ---
+                // .toStringAsFixed(1) metodu, 4.0 gibi bir sayıyı "4.0" metnine çevirir.
+                Text(rating.toStringAsFixed(1), style: AppFonts.bodyMedium(color: AppColors.textPrimary)),
                 const SizedBox(width: 8),
                 const Text('•', style: TextStyle(color: AppColors.textSecondary)),
                 const SizedBox(width: 8),
@@ -149,27 +158,29 @@ class SalonCard extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(
-          height: 30,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: services.length,
-            itemBuilder: (context, index) {
-              return _buildServiceTag(services[index]);
-            },
+        // Hizmet Rozetleri
+        if (services.isNotEmpty)
+          SizedBox(
+            height: 30,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: services.length,
+              itemBuilder: (context, index) {
+                return _buildServiceTag(services[index]);
+              },
+            ),
           ),
-        ),
       ],
     );
   }
 
-  /// Hizmet etiketini oluşturan fonksiyon
+  /// Hizmet etiketlerini (rozetlerini) oluşturan fonksiyon.
   Widget _buildServiceTag(String service) {
     return Container(
       margin: const EdgeInsets.only(right: 8.0),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.primaryColor.withValues(alpha: 0.1),
+        color: AppColors.primaryColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Center(
@@ -182,7 +193,7 @@ class SalonCard extends StatelessWidget {
     );
   }
 
-  /// Resim yüklenemediğinde gösterilecek yedek widget
+  /// Resim yüklenemediğinde veya resim yolu boş olduğunda gösterilecek yedek widget.
   Widget _errorBuilder(BuildContext context, Object? error, StackTrace? stackTrace) {
     return Container(
       decoration: BoxDecoration(

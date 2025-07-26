@@ -131,7 +131,7 @@ class SearchScreen extends StatelessWidget {
           salonId: salon.saloonId,
           name: salon.saloonName,
           description: salon.saloonDescription ?? 'Açıklama mevcut değil.',
-          rating: '4.1', // Bu değer dinamik olarak modelden gelmeli
+          rating: salon.rating, // Bu değer dinamik olarak modelden gelmeli
           location: salon.saloonAddress?.split(',').first ?? 'Konum Yok',
           distance: '5 Km', // Bu değer dinamik olarak hesaplanmalı
           // `serviceNames` artık doğru bir şekilde `SalonCard`'a gönderiliyor.
