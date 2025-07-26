@@ -71,7 +71,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         final List<ReservationModel> pastAppointments = allPastAppointments.take(5).toList();
 
         return Scaffold(
-          // 1. Arka plan rengi güncellendi
           backgroundColor: AppColors.background,
           body: appointmentsViewModel.isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -85,7 +84,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 children: [
                   Text(
                     'Gelecek Randevularım',
-                    // 2. Başlık metin rengi güncellendi
                     style: AppFonts.poppinsBold(
                         fontSize: 18, color: AppColors.textPrimary),
                   ),
@@ -106,7 +104,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                   const SizedBox(height: 30),
                   Text(
                     'Geçmiş Randevularım',
-                    // 3. Başlık metin rengi güncellendi
                     style: AppFonts.poppinsBold(
                         fontSize: 18, color: AppColors.textPrimary),
                   ),
@@ -150,12 +147,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        // 4. Kart rengi güncellendi
         color: AppColors.cardColor,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05), // Hafif gölge
+            color: Colors.black.withOpacity(0.05),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -197,7 +193,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     Expanded(
                       child: Text(
                         reservation.saloon?.saloonName ?? 'Salon Bilgisi Yok',
-                        // 5. Kart başlık rengi güncellendi
                         style: AppFonts.poppinsBold(
                             fontSize: 18, color: AppColors.textPrimary),
                         overflow: TextOverflow.ellipsis,
@@ -268,21 +263,20 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 const SizedBox(height: 5),
                 Text(
                   'Yapılacak İşlem: ${reservation.service?.serviceName ?? 'Bilinmiyor'}',
-                  // 6. Kart metin rengi güncellendi
                   style: AppFonts.bodySmall(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Tarih: ${DateFormat.yMMMMd('tr_TR').format(reservation.reservationDate)} Saat: ${reservation.reservationTime}',
-                  // 7. Kart metin rengi güncellendi
                   style: AppFonts.bodyMedium(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 5),
+                // --- HATA DÜZELTMESİ BURADA ---
                 Text(
                   'Durum: ${reservation.status.name}',
-                  style: AppFonts.bodyMedium(
-                      color: AppColors.primaryColor,
-                      fontWeight: FontWeight.bold),
+                  // fontWeight parametresi yerine .copyWith() metodu kullanıldı.
+                  style: AppFonts.bodyMedium(color: AppColors.primaryColor)
+                      .copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -299,14 +293,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         child: Column(
           children: [
             Icon(isSearching ? Icons.search_off : Icons.event_busy,
-                // 8. İkon rengi güncellendi
                 size: 80, color: AppColors.iconColor.withOpacity(0.5)),
             const SizedBox(height: 20),
             Text(
               isSearching
                   ? 'Arama kriterlerinize uygun randevu bulunamadı.'
                   : message,
-              // 9. Mesaj metin rengi güncellendi
               style: AppFonts.bodyMedium(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),

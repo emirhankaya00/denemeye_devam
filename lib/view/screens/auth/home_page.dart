@@ -90,9 +90,11 @@ class _HomePageState extends State<HomePage> {
         );
       }
     } finally {
-      setState(() {
-        _isLoading = false; // İşlem bittiğinde yüklemeyi durdur
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false; // İşlem bittiğinde yüklemeyi durdur
+        });
+      }
     }
   }
 
@@ -192,9 +194,16 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: _isLoading // Yüklenirken Spinner göster
+                child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : Text('Giriş Yap', style: AppFonts.poppinsBold(fontSize: 16)),
+                // --- DEĞİŞİKLİK BURADA ---
+                    : Text(
+                  'Giriş Yap',
+                  style: AppFonts.poppinsBold(
+                    fontSize: 16,
+                    color: AppColors.textOnPrimary, // Rengi beyaz olarak belirttik
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
 

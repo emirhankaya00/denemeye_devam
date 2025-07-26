@@ -1,61 +1,65 @@
 import 'package:flutter/material.dart';
+import 'app_colors.dart';
 
 class AppFonts {
-  static const String poppins = 'Poppins';
-  static const String montserrat = 'Montserrat';
 
-  // Mevcut stilleriniz...
-  static TextStyle displayLarge({Color? color}) {
+  static TextStyle ralewayTitle({
+    double fontSize = 24, // Daha büyük ve dikkat çekici
+    Color color = AppColors.textPrimary,
+  }) {
     return TextStyle(
-      fontFamily: poppins,
-      fontSize: 57,
-      fontWeight: FontWeight.w400,
+      fontFamily: 'Raleway',
+      fontSize: fontSize,
+      fontWeight: FontWeight.w300, // Raleway-Light için w300 kullanılır
+      color: color,
+    );
+  }
+  static const String _fontFamily = 'Montserrat';
+
+  static TextStyle poppinsBold({
+    double fontSize = 18,
+    Color color = AppColors.textPrimary,
+  }) {
+    return TextStyle(
+      fontFamily: _fontFamily,
+      fontSize: fontSize,
+      fontWeight: FontWeight.bold, // w700
       color: color,
     );
   }
 
-  static TextStyle displayMedium({Color? color}) {
+  static TextStyle poppinsSemiBold({
+    double fontSize = 16,
+    Color color = AppColors.textPrimary,
+  }) {
     return TextStyle(
-      fontFamily: poppins,
-      fontSize: 45,
-      fontWeight: FontWeight.w400,
+      fontFamily: _fontFamily,
+      fontSize: fontSize,
+      fontWeight: FontWeight.w600, // Semi-bold
       color: color,
     );
   }
 
-  // Kalın Poppins için yeni stil
-  static TextStyle poppinsBold({Color? color, double? fontSize}) {
+  static TextStyle bodyMedium({
+    double fontSize = 14,
+    Color color = AppColors.textSecondary,
+  }) {
     return TextStyle(
-      fontFamily: poppins,
-      fontSize: fontSize ?? 16, // Varsayılan boyut 16, ancak dışarıdan ayarlanabilir
-      fontWeight: FontWeight.w700, // Kalınlık 700 (bold)
+      fontFamily: _fontFamily,
+      fontSize: fontSize,
+      fontWeight: FontWeight.normal, // w400
       color: color,
     );
   }
 
-  static TextStyle bodyLarge({Color? color}) {
+  static TextStyle bodySmall({
+    double fontSize = 12,
+    Color color = AppColors.textSecondary,
+  }) {
     return TextStyle(
-      fontFamily: montserrat,
-      fontSize: 16,
-      fontWeight: FontWeight.w400,
-      color: color,
-    );
-  }
-
-  static TextStyle bodyMedium({Color? color,FontWeight? fontWeight}) {
-    return TextStyle(
-      fontFamily: montserrat,
-      fontSize: 14,
-      fontWeight: FontWeight.w400,
-      color: color,
-    );
-  }
-
-  static TextStyle bodySmall({Color? color}) {
-    return TextStyle(
-      fontFamily: montserrat,
-      fontSize: 12,
-      fontWeight: FontWeight.w400,
+      fontFamily: _fontFamily,
+      fontSize: fontSize,
+      fontWeight: FontWeight.normal, // w400
       color: color,
     );
   }

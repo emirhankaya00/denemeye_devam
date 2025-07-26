@@ -5,7 +5,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.8.1 <4.0.0' # SDK aralığını belirtmek daha güvenlidir.
+  sdk: '>=3.8.1 <4.0.0'
 
 dependencies:
   flutter:
@@ -17,6 +17,7 @@ dependencies:
   supabase_flutter: ^2.9.1
   provider: ^6.1.5
   flutter_dotenv: ^5.1.0
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
@@ -29,20 +30,29 @@ flutter:
   uses-material-design: true
 
   # Varlıklarınızı (assets) buraya ekleyin.
-  # Yeni tasarım için logo klasörünü ekledim.
   assets:
     - .env
-    - assets/images/ # Logo ve diğer görseller için
+    - assets/images/
     - assets/map_placeholder.png
     - assets/logos/
 
   # Fontlarınızı buraya ekleyin.
   fonts:
+    - family: Raleway
+      fonts:
+        - asset: assets/fonts/Raleway-Light.ttf
+          weight: 300 # Light font kalınlığı
+        - asset: assets/fonts/Raleway-Regular.ttf
+          # Normal kalınlık (400) olduğu için weight belirtmeye gerek yok.
+
     - family: Poppins
       fonts:
         - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
         - asset: assets/fonts/Poppins-Bold.ttf
           weight: 700
+
     - family: Montserrat
       fonts:
         - asset: assets/fonts/Montserrat-Regular.ttf

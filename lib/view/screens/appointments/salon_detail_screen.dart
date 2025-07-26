@@ -357,7 +357,13 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                 Text(service.serviceName, style: AppFonts.poppinsBold(fontSize: 15, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
                 const Spacer(),
                 Text('Süre: ${service.estimatedTime.inMinutes} dk', style: AppFonts.bodySmall(color: AppColors.textSecondary)),
-                Text('Fiyat: ${service.basePrice} TL', style: AppFonts.bodyMedium(color: AppColors.primaryColor, fontWeight: FontWeight.bold)),
+                // --- HATA DÜZELTMESİ BURADA ---
+                Text(
+                  'Fiyat: ${service.basePrice} TL',
+                  // `fontWeight` parametresi yerine `.copyWith()` metodu kullanıldı.
+                  style: AppFonts.bodyMedium(color: AppColors.primaryColor)
+                      .copyWith(fontWeight: FontWeight.bold),
+                ),
               ],
             ),
           );

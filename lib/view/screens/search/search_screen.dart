@@ -124,14 +124,19 @@ class SearchScreen extends StatelessWidget {
       itemCount: viewModel.filteredSaloons.length,
       itemBuilder: (context, index) {
         final salon = viewModel.filteredSaloons[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16.0), // Kartlar arası boşluk
-          child: SalonCard(
-            salonId: salon.saloonId,
-            name: salon.saloonName,
-            rating: '4.8', // Dinamik veri ile değiştirilecek
-            services: salon.services.map((s) => s.serviceName).toList(),
-          ),
+        // **DÜZELTME:** serviceNames değişkeni burada tanımlandı.
+        final serviceNames = salon.services.map((s) => s.serviceName).toList();
+
+        return SalonCard(
+          salonId: salon.saloonId,
+          name: salon.saloonName,
+          description: salon.saloonDescription ?? 'Açıklama mevcut değil.',
+          rating: '4.1', // Bu değer dinamik olarak modelden gelmeli
+          location: salon.saloonAddress?.split(',').first ?? 'Konum Yok',
+          distance: '5 Km', // Bu değer dinamik olarak hesaplanmalı
+          // `serviceNames` artık doğru bir şekilde `SalonCard`'a gönderiliyor.
+          services: serviceNames.isNotEmpty ? serviceNames : ["Hizmet Yok"],
+          imagePath: salon.titlePhotoUrl,
         );
       },
     );

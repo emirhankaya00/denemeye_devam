@@ -1,3 +1,5 @@
+// lib/view/screens/dashboard/dashboard_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -18,6 +20,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    // Verileri arayüz çizildikten hemen sonra çek
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<DashboardViewModel>(context, listen: false).fetchDashboardData();
     });
@@ -25,16 +28,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Scaffold ve AppBar, RootScreen'da yönetildiği için
-    // burası doğrudan arka plan rengiyle başlar.
     return Container(
-      color: AppColors.background, // 1. Arka plan rengi güncellendi.
+      color: AppColors.background,
       child: const _DashboardContent(),
     );
   }
 }
 
-// ANA İÇERİK WIDGET'I
 class _DashboardContent extends StatelessWidget {
   const _DashboardContent();
 
@@ -42,108 +42,101 @@ class _DashboardContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = Provider.of<DashboardViewModel>(context);
 
-    return Column(
-      children: [
-        Expanded(
-          child: viewModel.isLoading && viewModel.nearbySaloons.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : RefreshIndicator(
-            onRefresh: () => viewModel.fetchDashboardData(),
-            color: AppColors.primaryColor, // Refresh indicator rengi
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: Image.asset(
-                        'assets/map_placeholder.png', // Bu görseli asset'lerde tuttuğundan emin ol
-                        fit: BoxFit.cover,
-                        height: 200,
-                        width: double.infinity,
-                      ),
-                    ),
-                  ),
-                  const SectionTitle(title: 'Yakınlardaki Salonlar'),
-                  SaloonList(saloons: viewModel.nearbySaloons),
-                  const SectionDivider(),
-                  const SectionTitle(title: 'En Yüksek Puanlılar'),
-                  SaloonList(saloons: viewModel.topRatedSaloons),
-                  const SectionDivider(),
-                  const SectionTitle(title: 'Kampanyalar'),
-                  SaloonList(
-                    saloons: viewModel.campaignSaloons,
-                    hasCampaign: true,
-                  ),
-                  const SizedBox(height: 20),
-                ],
+    // İlk yüklemede boş ekran yerine direkt yükleme göstergesi sunar.
+    if (viewModel.isLoading && viewModel.nearbySaloons.isEmpty) {
+      return const Center(
+          child: CircularProgressIndicator(color: AppColors.primaryColor));
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => viewModel.fetchDashboardData(),
+      color: AppColors.primaryColor,
+      child: SingleChildScrollView(
+        // Yenileme özelliğinin her zaman çalışması için
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Image.asset(
+                  'assets/map_placeholder.png', // Bu görselin asset'lerde olduğundan emin ol
+                  fit: BoxFit.cover,
+                  height: 200,
+                  width: double.infinity,
+                ),
               ),
             ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class SectionTitle extends StatelessWidget {
-  final String title;
-  const SectionTitle({super.key, required this.title});
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      child: Text(
-        title,
-        style: AppFonts.poppinsBold(
-          fontSize: 18,
-          // 2. Başlık metin rengi güncellendi.
-          color: AppColors.textPrimary,
+            const SectionTitle(title: 'Yakınlardaki Salonlar'),
+            SaloonList(saloons: viewModel.nearbySaloons),
+            const SectionDivider(),
+            const SectionTitle(title: 'En Yüksek Puanlılar'),
+            SaloonList(saloons: viewModel.topRatedSaloons),
+            const SectionDivider(),
+            const SectionTitle(title: 'Kampanyalar'),
+            SaloonList(saloons: viewModel.campaignSaloons),
+            const SizedBox(height: 20),
+          ],
         ),
       ),
     );
   }
 }
 
+// BÖLÜM BAŞLIĞI WIDGET'I
+class SectionTitle extends StatelessWidget {
+  final String title;
+  const SectionTitle({super.key, required this.title});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0), // Boşluklar ayarlandı
+      child: Text(
+        title,
+        // DEĞİŞİKLİK: Yeni ve şık Raleway stilini kullanıyoruz.
+        style: AppFonts.ralewayTitle(),
+      ),
+    );
+  }
+}
+
+// BÖLÜM AYIRICI WIDGET'I
 class SectionDivider extends StatelessWidget {
   const SectionDivider({super.key});
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-      // 3. Ayırıcı (divider) rengi güncellendi.
       child: Divider(color: AppColors.borderColor, thickness: 1),
     );
   }
 }
 
+// SALON LİSTESİ WIDGET'I
 class SaloonList extends StatelessWidget {
   final List<SaloonModel> saloons;
-  final bool hasCampaign;
+
   const SaloonList({
     super.key,
     required this.saloons,
-    this.hasCampaign = false,
   });
 
   @override
   Widget build(BuildContext context) {
     if (saloons.isEmpty) {
-      return SizedBox(
+      return const SizedBox(
         height: 100,
         child: Center(
             child: Text(
               "Bu kategoride salon bulunamadı.",
-              // 4. Boş liste mesajının rengi güncellendi.
-              style: AppFonts.bodyMedium(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.textSecondary),
             )),
       );
     }
     return SizedBox(
-      height: 285, // SalonCard boyutuna göre ayarlandı, gerekirse değiştirilebilir.
+      height: 330, // Yükseklik son kart tasarımına göre ayarlandı
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -152,13 +145,22 @@ class SaloonList extends StatelessWidget {
           final salon = saloons[index];
           final serviceNames =
           salon.services.map((s) => s.serviceName).toList();
-          return SalonCard(
-            salonId: salon.saloonId,
-            name: salon.saloonName,
-            rating: '4.8', // Bu değer dinamik olarak gelmeli
-            services: serviceNames.isNotEmpty ? serviceNames : ["Hizmet Yok"],
-            hasCampaign: hasCampaign,
-            // SalonCard'ın kendi içinde de yeni renkleri kullandığından emin olmalıyız.
+
+          // DEĞİŞİKLİK: Hata ayıklama kodu olan 'print' satırı kaldırıldı.
+
+          return Container(
+            width: MediaQuery.of(context).size.width * 0.8,
+            margin: const EdgeInsets.only(right: 8.0),
+            child: SalonCard(
+              salonId: salon.saloonId,
+              name: salon.saloonName,
+              description: salon.saloonDescription ?? 'Açıklama mevcut değil.',
+              rating: '4.1', // Bu değer dinamik olarak modelden gelmeli
+              location: salon.saloonAddress?.split(',').first ?? 'Konum Yok',
+              distance: '5 Km', // Bu değer hesaplanmalı
+              services: serviceNames.isNotEmpty ? serviceNames : ["Hizmet Yok"],
+              imagePath: salon.titlePhotoUrl,
+            ),
           );
         },
       ),
