@@ -48,7 +48,6 @@ class _RegisterPageState extends State<RegisterPage> {
     final password = _passwordController.text.trim();
     final name = _nameController.text.trim();
     final surname = _surnameController.text.trim();
-    final phone = _phoneController.text.trim();
 
     try {
       await authViewModel.signUp(

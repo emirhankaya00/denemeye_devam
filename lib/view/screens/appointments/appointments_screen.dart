@@ -151,7 +151,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 3),
@@ -165,7 +165,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             width: 70,
             height: 70,
             decoration: BoxDecoration(
-              color: AppColors.primaryColor.withOpacity(0.1),
+              color: AppColors.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(15),
               image: reservation.saloon?.titlePhotoUrl != null &&
                   reservation.saloon!.titlePhotoUrl!.isNotEmpty
@@ -178,7 +178,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             child: reservation.saloon?.titlePhotoUrl == null ||
                 reservation.saloon!.titlePhotoUrl!.isEmpty
                 ? Center(
-                child: Icon(Icons.cut, color: AppColors.primaryColor.withOpacity(0.6), size: 35))
+                child: Icon(Icons.cut, color: AppColors.primaryColor.withValues(alpha: 0.6), size: 35))
                 : null,
           ),
           const SizedBox(width: 15),
@@ -244,7 +244,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                               }}
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red.withOpacity(0.1),
+                            backgroundColor: Colors.red.withValues(alpha: 0.1),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(15)),
@@ -293,7 +293,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         child: Column(
           children: [
             Icon(isSearching ? Icons.search_off : Icons.event_busy,
-                size: 80, color: AppColors.iconColor.withOpacity(0.5)),
+                size: 80, color: AppColors.iconColor.withValues(alpha: 0.5)),
             const SizedBox(height: 20),
             Text(
               isSearching

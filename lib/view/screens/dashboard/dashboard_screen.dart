@@ -20,7 +20,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Verileri arayüz çizildikten hemen sonra çek
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<DashboardViewModel>(context, listen: false).fetchDashboardData();
     });
@@ -42,7 +41,6 @@ class _DashboardContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = Provider.of<DashboardViewModel>(context);
 
-    // İlk yüklemede boş ekran yerine direkt yükleme göstergesi sunar.
     if (viewModel.isLoading && viewModel.nearbySaloons.isEmpty) {
       return const Center(
           child: CircularProgressIndicator(color: AppColors.primaryColor));
@@ -52,7 +50,6 @@ class _DashboardContent extends StatelessWidget {
       onRefresh: () => viewModel.fetchDashboardData(),
       color: AppColors.primaryColor,
       child: SingleChildScrollView(
-        // Yenileme özelliğinin her zaman çalışması için
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,7 +59,7 @@ class _DashboardContent extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(15),
                 child: Image.asset(
-                  'assets/map_placeholder.png', // Bu görselin asset'lerde olduğundan emin ol
+                  'assets/map_placeholder.png',
                   fit: BoxFit.cover,
                   height: 200,
                   width: double.infinity,
@@ -92,10 +89,11 @@ class SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0), // Boşluklar ayarlandı
+      // --- DEĞİŞİKLİK BURADA ---
+      // Alt boşluk 8.0'dan 16.0'a çıkarılarak daha ferah bir görünüm sağlandı.
+      padding: const EdgeInsets.fromLTRB(16.0, 24.0, 16.0, 16.0),
       child: Text(
         title,
-        // DEĞİŞİKLİK: Yeni ve şık Raleway stilini kullanıyoruz.
         style: AppFonts.ralewayTitle(),
       ),
     );
@@ -136,7 +134,7 @@ class SaloonList extends StatelessWidget {
       );
     }
     return SizedBox(
-      height: 330, // Yükseklik son kart tasarımına göre ayarlandı
+      height: 350, // Yükseklik son kart tasarımına göre ayarlanmıştı.
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -146,8 +144,6 @@ class SaloonList extends StatelessWidget {
           final serviceNames =
           salon.services.map((s) => s.serviceName).toList();
 
-          // DEĞİŞİKLİK: Hata ayıklama kodu olan 'print' satırı kaldırıldı.
-
           return Container(
             width: MediaQuery.of(context).size.width * 0.8,
             margin: const EdgeInsets.only(right: 8.0),
@@ -155,7 +151,7 @@ class SaloonList extends StatelessWidget {
               salonId: salon.saloonId,
               name: salon.saloonName,
               description: salon.saloonDescription ?? 'Açıklama mevcut değil.',
-              rating: '4.1', // Bu değer dinamik olarak modelden gelmeli
+              rating: '4.1', // Dinamik olarak gelmeli
               location: salon.saloonAddress?.split(',').first ?? 'Konum Yok',
               distance: '5 Km', // Bu değer hesaplanmalı
               services: serviceNames.isNotEmpty ? serviceNames : ["Hizmet Yok"],

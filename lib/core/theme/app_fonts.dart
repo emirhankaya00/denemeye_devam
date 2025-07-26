@@ -14,6 +14,19 @@ class AppFonts {
       color: color,
     );
   }
+
+  static TextStyle poppinsCardTitle({
+    double fontSize = 20,
+    Color color = AppColors.textPrimary,
+  }) {
+    return TextStyle(
+      fontFamily: 'Poppins',
+      fontSize: fontSize,
+      fontWeight: FontWeight.w700, // Poppins-Bold
+      color: color,
+    );
+  }
+  // Font ailesini 'Poppins' yerine 'Montserrat' olarak değiştiriyoruz.
   static const String _fontFamily = 'Montserrat';
 
   static TextStyle poppinsBold({

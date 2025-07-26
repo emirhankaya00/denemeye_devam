@@ -33,7 +33,7 @@ class ProfileScreen extends StatelessWidget {
                   child: CircleAvatar(
                     radius: 65,
                     // 2. Profil fotoğrafı arka planı güncellendi
-                    backgroundColor: AppColors.primaryColor.withOpacity(0.1),
+                    backgroundColor: AppColors.primaryColor.withValues(alpha: 0.1),
                     child: CircleAvatar(
                       radius: 60,
                       backgroundColor: AppColors.primaryColor,

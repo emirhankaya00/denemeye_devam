@@ -313,8 +313,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
               onPrimary: AppColors.textOnPrimary,
               surface: AppColors.background,
               onSurface: AppColors.textPrimary,
-            ),
-            dialogBackgroundColor: AppColors.background,
+            ), dialogTheme: DialogThemeData(backgroundColor: AppColors.background),
           ),
           child: child!,
         );
@@ -445,7 +444,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                     const SizedBox(height: 8),
                     Text(comment.commentText, style: AppFonts.bodyMedium(color: AppColors.textSecondary), maxLines: 3, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 8),
-                    Text(DateFormat('dd MMMM yyyy', 'tr_TR').format(comment.createdAt), style: AppFonts.bodySmall(color: AppColors.textSecondary.withOpacity(0.7))),
+                    Text(DateFormat('dd MMMM yyyy', 'tr_TR').format(comment.createdAt), style: AppFonts.bodySmall(color: AppColors.textSecondary.withValues(alpha: 0.7))),
                   ],
                 ),
               ),
@@ -510,7 +509,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                 maxLines: 4,
                 decoration: InputDecoration(
                   hintText: 'Yorumunuzu buraya yazın...',
-                  hintStyle: AppFonts.bodyMedium(color: AppColors.textSecondary.withOpacity(0.6)),
+                  hintStyle: AppFonts.bodyMedium(color: AppColors.textSecondary.withValues(alpha: 0.6)),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.borderColor)),
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primaryColor, width: 2)),
                   filled: true,

@@ -95,7 +95,7 @@ class SearchScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // 4. İkon rengi güncellendi.
-            Icon(Icons.search_off, size: 80, color: AppColors.iconColor.withOpacity(0.5)),
+            Icon(Icons.search_off, size: 80, color: AppColors.iconColor.withValues(alpha: 0.5)),
             const SizedBox(height: 20),
             Text(
               // Arama sorgusu varsa daha anlamlı bir mesaj göster

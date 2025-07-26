@@ -10,8 +10,10 @@ class PersonalModel {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  // ignore: prefer_typing_uninitialized_variables
   var title;
 
+  // ignore: prefer_typing_uninitialized_variables
   var profileImageUrl;
 
   PersonalModel({

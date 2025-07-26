@@ -56,7 +56,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // 2. İkon rengi güncellendi.
-            Icon(isSearching ? Icons.search_off : Icons.favorite_border, size: 80, color: AppColors.iconColor.withOpacity(0.5)),
+            Icon(isSearching ? Icons.search_off : Icons.favorite_border, size: 80, color: AppColors.iconColor.withValues(alpha: 0.5)),
             const SizedBox(height: 20),
             Text(
               isSearching ? 'Arama sonucunuz bulunamadı.' : 'Henüz favori salonunuz yok.',
@@ -106,7 +106,7 @@ class FavoriteSalonCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
       elevation: 4,
-      shadowColor: Colors.black.withOpacity(0.05),
+      shadowColor: Colors.black.withValues(alpha: 0.05),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       // 5. Kart rengi güncellendi.
       color: AppColors.cardColor,

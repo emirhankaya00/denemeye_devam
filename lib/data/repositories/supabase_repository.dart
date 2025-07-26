@@ -4,8 +4,10 @@ import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
+import 'package:logger/logger.dart';
 
 // GEREKSİZ IMPORT SATIRI KALDIRILDI
+var logger = Logger();
 
 class SupabaseRepository {
   final supabase = Supabase.instance.client;
@@ -35,9 +37,9 @@ class SupabaseRepository {
           .from('saloons')
           .update({'title_photo_url': imageUrl}).eq('saloon_id', salonId);
 
-      print('Resim başarıyla yüklendi ve URL veritabanına kaydedildi!');
+      logger.i('Resim başarıyla yüklendi ve URL veritabanına kaydedildi!');
     } catch (e) {
-      print('Hata oluştu: $e');
+      logger.i('Hata oluştu: $e');
     }
   }
 }

@@ -154,7 +154,7 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 16.0),
                   elevation: 4,
-                  shadowColor: Colors.black.withOpacity(0.05),
+                  shadowColor: Colors.black.withValues(alpha: 0.05),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   color: AppColors.cardColor,
                   child: Padding(
@@ -193,7 +193,7 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
                           child: Text(
                             DateFormat('dd.MM.yyyy, HH:mm').format(comment.createdAt),
                             // 9. Tarih metin rengi güncellendi
-                            style: AppFonts.bodySmall(color: AppColors.textSecondary.withOpacity(0.7)),
+                            style: AppFonts.bodySmall(color: AppColors.textSecondary.withValues(alpha: 0.7)),
                           ),
                         ),
                       ],

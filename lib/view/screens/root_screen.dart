@@ -142,7 +142,7 @@ class _MainAppState extends State<MainApp> {
         prefixIcon: const Icon(Icons.search, color: AppColors.iconColor),
         // 3. Arama çubuğu renkleri ve stili güncellendi
         filled: true,
-        fillColor: AppColors.borderColor.withOpacity(0.5),
+        fillColor: AppColors.borderColor.withValues(alpha: 0.5),
         contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
