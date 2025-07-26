@@ -40,7 +40,7 @@ class _MainAppState extends State<MainApp> {
   static final List<Widget> _pages = <Widget>[
     const DashboardScreen(),
     const AppointmentsScreen(),
-    const SearchScreen(),
+    const SearchScreen(), // Ortadaki ikon artık arama değil ama sayfa hala duruyor.
     const FavoritesScreen(),
     const ProfileScreen(),
   ];
@@ -52,7 +52,8 @@ class _MainAppState extends State<MainApp> {
     _searchFocusNode = FocusNode();
 
     _searchController.addListener(() {
-      Provider.of<SearchViewModel>(context, listen: false).setSearchQuery(_searchController.text);
+      Provider.of<SearchViewModel>(context, listen: false)
+          .setSearchQuery(_searchController.text);
     });
 
     _searchFocusNode.addListener(() {
@@ -70,8 +71,10 @@ class _MainAppState extends State<MainApp> {
   }
 
   void _onItemTapped(int index) {
+    // Arama ekranı artık 2. index'te değil, ana sayfadaki arama barından gidiliyor.
+    // Eğer ortadaki butona basıldığında yine de arama sayfasına gidilmesi isteniyorsa
+    // bu mantık değiştirilebilir. Şimdilik arama sayfasını 2. index'te tutuyorum.
     setState(() {
-      // Arama ekranından başka bir ekrana geçildiğinde aramayı temizle
       if (_selectedIndex == 2 && index != 2) {
         _searchController.clear();
         _searchFocusNode.unfocus();
@@ -81,21 +84,79 @@ class _MainAppState extends State<MainApp> {
     });
   }
 
-  // YENİ TASARIMA UYGUN APPBAR
   AppBar _buildDynamicAppBar(BuildContext context) {
-    final authViewModel = context.read<AuthViewModel>();
+    final authViewModel = context.watch<AuthViewModel>();
+    final String userName = authViewModel.user?.userMetadata?['name'] ?? '';
+    final String userSurname =
+        authViewModel.user?.userMetadata?['surname'] ?? '';
+    String fullName = '$userName $userSurname'.trim();
+
+    if (fullName.isEmpty) {
+      fullName = 'Iris';
+    }
+
+    if (_selectedIndex == 0) {
+      return AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const SizedBox(width: 16),
+            Image.asset(
+              'assets/logos/2.png',
+              height: 32,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              fullName,
+              style: AppFonts.poppinsBold(
+                  fontSize: 20, color: AppColors.textPrimary),
+            ),
+          ],
+        ),
+        actions: [
+          GestureDetector(
+            onTap: () {
+              _onItemTapped(2);
+            },
+            child: Container(
+              height: 40,
+              width: 140,
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.borderColor.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 12),
+                  Icon(Icons.search,
+                      color: AppColors.textSecondary.withOpacity(0.7), size: 20),
+                ],
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(
+              Icons.notifications_none_outlined,
+              color: AppColors.primaryColor,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+      );
+    }
+
     String titleText = '';
     bool showSearchField = false;
-
-    // Sayfa başlıklarını belirle
     switch (_selectedIndex) {
-      case 0:
-        titleText = 'Ana Sayfa';
-        break;
       case 1:
         titleText = 'Randevularım';
         break;
-      case 2: // Arama ekranında başlık yerine arama çubuğu gelecek
+      case 2:
         showSearchField = true;
         break;
       case 3:
@@ -107,43 +168,37 @@ class _MainAppState extends State<MainApp> {
     }
 
     return AppBar(
-      // 1. AppBar Renkleri ve Stili Güncellendi
       backgroundColor: AppColors.background,
       foregroundColor: AppColors.textPrimary,
-      elevation: 0, // Altındaki çizgi için elevation yerine Border kullanacağız
+      elevation: 0,
       title: showSearchField
-          ? _buildSearchField() // Arama çubuğu
-          : Text(titleText, style: AppFonts.poppinsBold(color: AppColors.textPrimary, fontSize: 22)),
+          ? _buildSearchField()
+          : Text(titleText,
+          style: AppFonts.poppinsBold(
+              color: AppColors.textPrimary, fontSize: 22)),
       actions: [
-        // Profil ekranı hariç diğerlerinde çıkış butonu göster
-        if (_selectedIndex != 4)
+        if (_selectedIndex != 4 && _selectedIndex != 0)
           IconButton(
             icon: const Icon(Icons.logout_outlined, color: AppColors.iconColor),
             onPressed: () => authViewModel.signOut(),
           )
       ],
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1.0),
-        // 2. AppBar altına ayırıcı çizgi eklendi
-        child: Container(color: AppColors.borderColor, height: 1.0),
-      ),
     );
   }
 
-  // Arama çubuğu widget'ı
   Widget _buildSearchField() {
     return TextField(
       controller: _searchController,
       focusNode: _searchFocusNode,
-      autofocus: true, // Arama ekranına gelince klavye direkt açılsın
+      autofocus: true,
       decoration: InputDecoration(
         hintText: 'Salon, hizmet veya konum ara...',
         hintStyle: AppFonts.bodyMedium(color: AppColors.textSecondary),
         prefixIcon: const Icon(Icons.search, color: AppColors.iconColor),
-        // 3. Arama çubuğu renkleri ve stili güncellendi
         filled: true,
-        fillColor: AppColors.borderColor.withValues(alpha: 0.5),
-        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+        fillColor: AppColors.borderColor.withOpacity(0.5),
+        contentPadding:
+        const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -153,41 +208,97 @@ class _MainAppState extends State<MainApp> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _buildDynamicAppBar(context),
-      body: IndexedStack(index: _selectedIndex, children: _pages),
-      // 4. BottomNavigationBar tamamen yenilendi
-      bottomNavigationBar: BottomNavigationBar(
-        items: <BottomNavigationBarItem>[
-          _buildNavItem(Icons.home_filled, 'Ana Sayfa', 0),
-          _buildNavItem(Icons.event_note, 'Randevular', 1),
-          _buildNavItem(Icons.search, 'Ara', 2),
-          _buildNavItem(Icons.favorite, 'Favoriler', 3),
-          _buildNavItem(Icons.person, 'Profil', 4),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        // 5. Seçili ve seçili olmayan item renkleri güncellendi
-        selectedItemColor: AppColors.primaryColor,
-        unselectedItemColor: AppColors.iconColor,
-        selectedLabelStyle: AppFonts.bodySmall(),
-        unselectedLabelStyle: AppFonts.bodySmall(),
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
+  // --- YENİ WIDGET: Süzülen Navigasyon Çubuğu ---
+  Widget _buildFloatingNavBar() {
+    return Positioned(
+      bottom: 20,
+      left: 20,
+      right: 20,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.primaryColor,
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(Icons.home_outlined, 0),
+            _buildNavItem(Icons.calendar_today_outlined, 1),
+            _buildNavItem(null, 2, isLogo: true), // Logo için özel durum
+            _buildNavItem(Icons.favorite_border, 3),
+            _buildNavItem(Icons.person_outline, 4),
+          ],
+        ),
       ),
     );
   }
 
-  // Yeni BottomNavigationBar item'larını oluşturan helper metot
-  BottomNavigationBarItem _buildNavItem(IconData icon, String label, int index) {
-    return BottomNavigationBarItem(
-      icon: Icon(icon),
-      label: label,
+  // --- YENİ WIDGET: Navigasyon Elemanı ---
+  Widget _buildNavItem(IconData? icon, int index, {bool isLogo = false}) {
+    bool isSelected = _selectedIndex == index;
+
+    // Logo butonu için özel yapı
+    if (isLogo) {
+      return GestureDetector(
+        onTap: () => _onItemTapped(index),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Image.asset(
+              'assets/logos/3.png', // Beyaz logo
+              width: 28,
+              height: 28,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Diğer butonlar için genel yapı
+    return GestureDetector(
+      onTap: () => _onItemTapped(index),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Icon(
+          icon,
+          color: Colors.white,
+          size: 26,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: _buildDynamicAppBar(context),
+      // --- DEĞİŞİKLİK: Scaffold'u bir Stack içine alıyoruz ---
+      body: Stack(
+        children: [
+          IndexedStack(index: _selectedIndex, children: _pages),
+          _buildFloatingNavBar(), // Yeni navigasyon çubuğumuzu ekliyoruz
+        ],
+      ),
+      // Eski bottomNavigationBar'ı kaldırıyoruz.
+      // bottomNavigationBar: null,
     );
   }
 }

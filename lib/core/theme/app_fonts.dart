@@ -24,7 +24,7 @@ class AppFonts {
     return TextStyle(
       fontFamily: 'Poppins',
       fontSize: fontSize,
-      fontWeight: FontWeight.w200, // Poppins-Bold
+      fontWeight: FontWeight.w400,
       color: color,
     );
   }
