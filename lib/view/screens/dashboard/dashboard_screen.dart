@@ -9,9 +9,8 @@ import '../../../data/models/saloon_model.dart';
 import '../../view_models/dashboard_viewmodel.dart';
 import '../../widgets/specific/salon_card.dart';
 import 'all_saloons_screen.dart';
-import 'category_saloons_screen.dart'; // YENİ EKLENEN SAYFANIN IMPORT'U
+import 'category_saloons_screen.dart';
 
-// ... (DashboardScreen ve _DashboardContent widget'ları aynı kalıyor)
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -79,7 +78,7 @@ class _DashboardContent extends StatelessWidget {
               ),
             ),
             const SectionTitle(title: 'Kategoriler'),
-            const CategoryList(), // Bu widget'ı güncelleyeceğiz
+            const CategoryList(),
             const FilterBar(),
             const SectionDivider(),
             SectionTitle(
@@ -111,17 +110,19 @@ class _DashboardContent extends StatelessWidget {
 }
 
 
-// --- DEĞİŞİKLİK: CategoryList WIDGET'I GÜNCELLENDİ ---
+/// --- KESİN ÇÖZÜM: CategoryList WIDGET'I GÜNCELLENDİ ---
+/// Artık buradaki kategori isimleri, ViewModel'daki anahtarlarla aynı.
 class CategoryList extends StatelessWidget {
   const CategoryList({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Bu liste, DashboardViewModel'daki virtualCategories haritasının anahtarlarını yansıtmalıdır.
     final List<Map<String, String>> categories = [
-      {'name': 'Kişisel bakım', 'image': 'assets/images/iris_login_img_4.jpg'},
-      {'name': 'Tüy alımı ve ağda', 'image': 'assets/images/iris_login_img_3.jpg'},
-      {'name': 'Yüz ve cilt bakımı', 'image': 'assets/images/iris_login_img.jpg'},
-      {'name': 'Manikür & Pedikür', 'image': 'assets/images/iris_login_img_2.jpg'},
+      {'name': 'Saç Hizmetleri', 'image': 'assets/images/iris_login_img_3.jpg'},
+      {'name': 'Yüz ve Cilt Bakımı', 'image': 'assets/images/iris_login_img_4.jpg'},
+      {'name': 'El & Ayak Bakımı', 'image': 'assets/images/iris_login_img_2.jpg'},
+      {'name': 'Erkek Bakım', 'image': 'assets/images/iris_login_img.jpg'},
     ];
 
     void navigateToCategory(String categoryName) {
@@ -141,7 +142,7 @@ class CategoryList extends StatelessWidget {
         itemCount: categories.length,
         itemBuilder: (context, index) {
           final category = categories[index];
-          return GestureDetector( // Tıklanabilirlik için GestureDetector eklendi
+          return GestureDetector(
             onTap: () => navigateToCategory(category['name']!),
             child: Padding(
               padding: const EdgeInsets.only(right: 16.0),
@@ -166,7 +167,6 @@ class CategoryList extends StatelessWidget {
     );
   }
 }
-
 
 // ... (FilterBar, SectionTitle, SectionDivider ve SaloonList widget'ları aynı kalıyor)
 class FilterBar extends StatelessWidget {
