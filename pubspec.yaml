@@ -39,18 +39,9 @@ flutter:
 
   # Fontlarınızı buraya ekleyin.
   fonts:
-    - family: Raleway
-      fonts:
-        - asset: assets/fonts/Raleway-Light.ttf
-          weight: 300 # Light font kalınlığı
-        - asset: assets/fonts/Raleway-Regular.ttf
-          # Normal kalınlık (400) olduğu için weight belirtmeye gerek yok.
-
     - family: Poppins
       fonts:
         - asset: assets/fonts/Poppins-Regular.ttf
-        - asset: assets/fonts/Poppins-SemiBold.ttf
-          weight: 600
         - asset: assets/fonts/Poppins-Bold.ttf
           weight: 700
 

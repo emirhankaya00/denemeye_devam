@@ -3,17 +3,7 @@ import 'app_colors.dart';
 
 class AppFonts {
 
-  static TextStyle ralewayTitle({
-    double fontSize = 24, // Daha büyük ve dikkat çekici
-    Color color = AppColors.textPrimary,
-  }) {
-    return TextStyle(
-      fontFamily: 'Raleway',
-      fontSize: fontSize,
-      fontWeight: FontWeight.w300, // Raleway-Light için w300 kullanılır
-      color: color,
-    );
-  }
+
 
   static TextStyle poppinsCardTitle({
     double fontSize = 20,
@@ -26,8 +16,20 @@ class AppFonts {
       color: color,
     );
   }
-  // Font ailesini 'Poppins' yerine 'Montserrat' olarak değiştiriyoruz.
-  static const String _fontFamily = 'Montserrat';
+
+  static TextStyle poppinsHeaderTitle({
+    double fontSize = 20,
+    Color color = AppColors.textPrimary,
+  }) {
+    return TextStyle(
+      fontFamily: 'Poppins',
+      fontSize: fontSize,
+      fontWeight: FontWeight.w200, // Poppins-Bold
+      color: color,
+    );
+  }
+
+  static const String _fontFamily = 'Poppins';
 
   static TextStyle poppinsBold({
     double fontSize = 18,
@@ -41,18 +43,6 @@ class AppFonts {
     );
   }
 
-  static TextStyle poppinsSemiBold({
-    double fontSize = 16,
-    Color color = AppColors.textPrimary,
-  }) {
-    return TextStyle(
-      fontFamily: _fontFamily,
-      fontSize: fontSize,
-      fontWeight: FontWeight.w600, // Semi-bold
-      color: color,
-    );
-  }
-
   static TextStyle bodyMedium({
     double fontSize = 14,
     Color color = AppColors.textSecondary,
@@ -60,7 +50,7 @@ class AppFonts {
     return TextStyle(
       fontFamily: _fontFamily,
       fontSize: fontSize,
-      fontWeight: FontWeight.normal, // w400
+      fontWeight: FontWeight.w200, // w400
       color: color,
     );
   }
@@ -72,7 +62,7 @@ class AppFonts {
     return TextStyle(
       fontFamily: _fontFamily,
       fontSize: fontSize,
-      fontWeight: FontWeight.normal, // w400
+      fontWeight: FontWeight.w200, // w400
       color: color,
     );
   }

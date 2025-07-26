@@ -94,7 +94,7 @@ class SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16.0, 24.0, 16.0, 16.0),
       child: Text(
         title,
-        style: AppFonts.ralewayTitle(),
+        style: AppFonts.poppinsHeaderTitle(),
       ),
     );
   }
