@@ -113,6 +113,7 @@ class ReservationRepository {
 
   /// Pending/Approved durumdaki bir randevuyu kullanıcı iptal eder.
   Future<bool> cancelReservation(String reservationId) async {
+
     if (_userId == null) return false;
     try {
       final res = await _client
