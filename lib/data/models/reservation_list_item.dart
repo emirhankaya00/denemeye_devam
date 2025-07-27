@@ -7,11 +7,17 @@ class ReservationListItem {
   final String saloonId;
   final String saloonName;
   final String? saloonPhoto;
-  /// Tarih + saat birleşik DateTime
+
+  /// Tarih + saat birleşik
   final DateTime date;
-  /// pending / approved / rejected / cancelled ...
+
+  /// pending / approved / rejected / canceled_by_user ...
   final String status;
+
+  /// reservations.total_price (toplam)
   final double totalPrice;
+
+  /// Satırlar (reservation_services + services join)
   final List<ReservationServiceLine> lines;
 
   bool get isUpcoming => date.isAfter(DateTime.now());
@@ -28,47 +34,43 @@ class ReservationListItem {
   });
 
   factory ReservationListItem.fromJson(Map<String, dynamic> json) {
-    // --- Tarih + saat birleştir ---
+    // ── Tarih+Saat ─────────────────────────────────────────────────────────────
     final rawDate = json['reservation_date'];
     final rawTime = json['reservation_time'];
 
-    DateTime parseWithTime(DateTime d, String t) {
+    DateTime _combine(DateTime d, String t) {
       var h = 0, m = 0, s = 0;
-      final parts = t.split(':');
-      if (parts.isNotEmpty) h = int.tryParse(parts[0]) ?? 0;
-      if (parts.length >= 2) m = int.tryParse(parts[1]) ?? 0;
-      if (parts.length >= 3) s = int.tryParse(parts[2]) ?? 0;
+      final p = (t).toString().split(':');
+      if (p.isNotEmpty) h = int.tryParse(p[0]) ?? 0;
+      if (p.length >= 2) m = int.tryParse(p[1]) ?? 0;
+      if (p.length >= 3) s = int.tryParse(p[2]) ?? 0;
       return DateTime(d.year, d.month, d.day, h, m, s);
     }
 
     DateTime dt;
     if (rawDate is DateTime) {
-      // reservation_date DateTime gelmiş
-      if (rawTime is String && rawTime.isNotEmpty) {
-        dt = parseWithTime(rawDate, rawTime);
-      } else {
-        dt = rawDate;
-      }
+      dt = (rawTime is String && rawTime.isNotEmpty)
+          ? _combine(rawDate, rawTime)
+          : rawDate;
     } else {
-      // String / diğer tipler
-      final dateStr = (rawDate ?? '').toString().split('T').first; // 'YYYY-MM-DD'
-      final timeStr = (rawTime ?? '').toString();                   // 'HH:MM:SS'
-      dt = DateTime.tryParse('${dateStr}T$timeStr')  // ISO biçimi
-          ?? DateTime.tryParse('$dateStr $timeStr')  // boşluklu biçim
-          ?? DateTime.tryParse((rawDate ?? '').toString()) // belki tek başına tarih
-          ?? DateTime.now();
+      final dStr = (rawDate ?? '').toString().split('T').first; // YYYY-MM-DD
+      final tStr = (rawTime ?? '').toString(); // HH:MM[:SS]
+      dt = DateTime.tryParse('${dStr}T$tStr') ??
+          DateTime.tryParse('$dStr $tStr') ??
+          DateTime.tryParse((rawDate ?? '').toString()) ??
+          DateTime.now();
     }
 
-    // --- Salon bilgisi (join: saloons(*)) ---
+    // ── Salon bilgisi (join: saloons(*)) ──────────────────────────────────────
     final salon = json['saloons'] as Map<String, dynamic>?;
 
-    // --- Kalemler (join: reservation_services(*, services(*))) ---
-    final rs = (json['reservation_services'] as List? ?? [])
+    // ── Satırlar (join: reservation_services(*, services(*))) ─────────────────
+    final lines = (json['reservation_services'] as List? ?? [])
         .whereType<Map<String, dynamic>>()
         .map(ReservationServiceLine.fromJson)
         .toList();
 
-    // --- Fiyat ---
+    // ── Toplam fiyat ──────────────────────────────────────────────────────────
     final totalRaw = json['total_price'];
     final total = (totalRaw is num)
         ? totalRaw.toDouble()
@@ -82,7 +84,7 @@ class ReservationListItem {
       date: dt,
       status: (json['status'] ?? 'pending').toString(),
       totalPrice: total,
-      lines: rs,
+      lines: lines,
     );
   }
 }
@@ -91,8 +93,13 @@ class ReservationListItem {
 class ReservationServiceLine {
   final String serviceId;
   final String serviceName;
+
+  /// Dakika cinsinden tahmini süre
   final int estimatedMinutes;
+
   final int quantity;
+
+  /// Satır birim fiyatı (reservation_services.service_price_at_res)
   final double unitPrice;
 
   double get lineTotal => unitPrice * quantity;
@@ -108,30 +115,42 @@ class ReservationServiceLine {
   factory ReservationServiceLine.fromJson(Map<String, dynamic> json) {
     final svc = json['services'] as Map<String, dynamic>?;
 
-    // estimated_minutes güvenli parse
-    final estRaw = svc?['estimated_minutes'] ?? json['estimated_minutes'] ?? 0;
-    final est = (estRaw is num)
-        ? estRaw.toInt()
-        : int.tryParse(estRaw.toString()) ?? 0;
+    // Süre: services.estimated_time (interval: "HH:MM:SS") veya estimated_minutes (int)
+    int _parseEstimatedMinutes(dynamic v) {
+      if (v == null) return 0;
+      if (v is num) return v.toInt();
+      final s = v.toString();
+      final parts = s.split(':'); // "HH:MM:SS" / "MM:SS"
+      if (parts.length >= 2) {
+        final h = int.tryParse(parts[0]) ?? 0;
+        final m = int.tryParse(parts[1]) ?? 0;
+        return h * 60 + m;
+      }
+      return int.tryParse(s) ?? 0;
+    }
 
-    // quantity güvenli parse
-    final qtyRaw = json['quantity'] ?? 1;
-    final qty = (qtyRaw is num)
-        ? qtyRaw.toInt()
-        : int.tryParse(qtyRaw.toString()) ?? 1;
+    // Fiyat: repository’de alias kullandıysan (unit_price:service_price_at_res) direkt unit_price gelir.
+    // Yine de fallback koyalım.
+    double _parsePrice(Map<String, dynamic> j) {
+      final raw = j['unit_price'] ?? j['service_price_at_res'] ?? j['price'] ?? 0;
+      if (raw is num) return raw.toDouble();
+      return double.tryParse(raw.toString()) ?? 0.0;
+    }
 
-    // unitPrice güvenli parse (unit_price yoksa price'a düş)
-    final unitRaw = json['unit_price'] ?? json['price'] ?? 0;
-    final price = (unitRaw is num)
-        ? unitRaw.toDouble()
-        : double.tryParse(unitRaw.toString()) ?? 0.0;
+    // Adet
+    int _parseQty(dynamic v) {
+      if (v is num) return v.toInt();
+      return int.tryParse((v ?? '1').toString()) ?? 1;
+    }
 
     return ReservationServiceLine(
       serviceId: (svc?['service_id'] ?? json['service_id']).toString(),
       serviceName: (svc?['service_name'] ?? json['service_name'] ?? '').toString(),
-      estimatedMinutes: est,
-      quantity: qty,
-      unitPrice: price,
+      estimatedMinutes: _parseEstimatedMinutes(
+        svc?['estimated_time'] ?? svc?['estimated_minutes'] ?? json['estimated_minutes'],
+      ),
+      quantity: _parseQty(json['quantity']),
+      unitPrice: _parsePrice(json),
     );
   }
 }
