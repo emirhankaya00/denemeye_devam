@@ -85,7 +85,7 @@ class FavoritesViewModel extends ChangeNotifier {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SalonDetailScreen(salonId: salon.saloonId),
+        builder: (context) => SalonDetailScreen(saloonId: salon.saloonId),
       ),
     );
   }

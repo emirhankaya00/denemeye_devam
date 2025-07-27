@@ -1,22 +1,25 @@
 // lib/data/repositories/saloon_repository.dart
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/category_with_services.dart';
 import '../models/personal_model.dart';
 import '../models/saloon_model.dart';
+import '../models/selected_item.dart';
 import '../models/service_model.dart';
 
 class SaloonRepository {
   final SupabaseClient _client;
   SaloonRepository(this._client);
 
-  // UUID doğrulama (boş / hatalı id ile sorguyu atlamak için)
+  /// UUID doğrulama (boş/hatalı id ile sorguyu atlamak için)
   static final RegExp _uuidRegExp = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
   );
 
-  /// Liste ekranları için hafif seçim (yorumlarda sadece rating)
+  /// Liste ekranları için hafif SELECT (yorumlardan sadece rating topluyoruz)
   static const String _saloonListSelect = '''
     saloon_id,
     saloon_name,
@@ -36,7 +39,8 @@ class SaloonRepository {
     comments(rating)
   ''';
 
-  /// Detay ekranı için geniş seçim (yorumların tamamı)
+  /// Detay ekranı için geniş SELECT (yorumların tamamı)
+  /// DİKKAT: services(...) içinde estimated_minutes kaldırıldı (tablonuzda yok).
   static const String _saloonDetailSelect = '''
     saloon_id,
     saloon_name,
@@ -62,7 +66,7 @@ class SaloonRepository {
     )
   ''';
 
-  /// Ortak SELECT yardımcı fonksiyonu
+  /// Ortak SELECT helper
   Future<List<SaloonModel>> _fetchSaloons(String selectQuery) async {
     try {
       final data = await _client.from('saloons').select(selectQuery);
@@ -77,7 +81,7 @@ class SaloonRepository {
     }
   }
 
-  /// Belirli bir salonu ID ile getirir (hizmetler + yorumlar dahil)
+  /// Belirli bir salonu ID ile getir (hizmetler + yorumlar dahil)
   Future<SaloonModel?> getSaloonById(String salonId) async {
     if (salonId.isEmpty || !_uuidRegExp.hasMatch(salonId)) {
       debugPrint('getSaloonById: geçersiz UUID → "$salonId" (çağrı atlandı)');
@@ -104,18 +108,17 @@ class SaloonRepository {
     return _fetchSaloons(_saloonListSelect);
   }
 
-  /// Yakınlardaki salonlar (şimdilik aynı seçim; konum filtrelemesi VM tarafında yapılabilir)
+  /// Yakınlardaki salonlar
   Future<List<SaloonModel>> getNearbySaloons() {
     return _fetchSaloons(_saloonListSelect);
   }
 
-  /// En yüksek puanlı salonlar (listeyi aldıktan sonra VM’de sıralayabilirsin
-  /// ya da SQL tarafında view ile sıralı döndürebilirsin)
+  /// En yüksek puanlı salonlar
   Future<List<SaloonModel>> getTopRatedSaloons() {
     return _fetchSaloons(_saloonListSelect);
   }
 
-  /// Kampanyalı salonlar (kampanya alanı eklenirse burada filtrelenir)
+  /// Kampanyalı salonlar
   Future<List<SaloonModel>> getCampaignSaloons() {
     return _fetchSaloons(_saloonListSelect);
   }
@@ -194,6 +197,60 @@ class SaloonRepository {
     } catch (e) {
       debugPrint('getSaloonsByServiceNames Hata: $e');
       return [];
+    }
+  }
+}
+
+/// Rezervasyon ve kategorili hizmetler için ek uçlar
+extension BookingApi on SaloonRepository {
+  /// (1) Belirli salonun kategorilere göre gruplandırılmış hizmetleri
+  /// Supabase RPC: get_saloon_services_grouped_basic
+  Future<List<CategoryWithServices>> getSaloonCategoriesWithServices(
+      String saloonId,
+      ) async {
+    try {
+      final res = await _client.rpc('get_saloon_services_grouped_basic', params: {
+        'p_saloon_id': saloonId,
+      });
+      if (res is! List) return [];
+      return res
+          .cast<Map<String, dynamic>>()
+          .map(CategoryWithServices.fromJson)
+          .toList();
+    } catch (e) {
+      debugPrint('getSaloonCategoriesWithServices Hata: $e');
+      return [];
+    }
+  }
+
+  /// (2) Rezervasyon oluşturma
+  /// SQL fonksiyonunda `auth.uid()` fallback’i varsa p_user_id göndermen gerekmez.
+  /// items → SelectedItem.toRpcJson() ile gönderiliyor.
+  Future<String?> createReservation({
+    String? userId, // opsiyonel; null ise SQL tarafında auth.uid()
+    required String saloonId,
+    String? personalId,
+    required DateTime date,
+    required TimeOfDay time,
+    required List<SelectedItem> items,
+  }) async {
+    try {
+      final params = {
+        'p_user_id': userId, // null olabilir
+        'p_saloon_id': saloonId,
+        'p_personal_id': personalId,
+        'p_reservation_date':
+        DateTime(date.year, date.month, date.day).toIso8601String(),
+        'p_reservation_time':
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00',
+        'p_items': items.map((e) => e.toRpcJson()).toList(),
+      };
+      final res = await _client.rpc('create_reservation', params: params);
+      // res genelde rezervasyon_id döndürür; stringe çevirip veriyoruz
+      return res?.toString();
+    } catch (e) {
+      debugPrint('createReservation Hata: $e');
+      return null;
     }
   }
 }

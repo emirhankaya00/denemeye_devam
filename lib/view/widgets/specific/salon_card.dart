@@ -34,7 +34,7 @@ class SalonCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => SalonDetailScreen(salonId: salonId)),
+        MaterialPageRoute(builder: (_) => SalonDetailScreen(saloonId: salonId)),
       ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),

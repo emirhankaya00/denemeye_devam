@@ -6,30 +6,45 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+// Checkout’a yönlendirme için
+import 'package:denemeye_devam/view/screens/appointments/checkout_screen.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_fonts.dart';
 import '../../../data/models/saloon_model.dart';
 import '../../../data/models/service_model.dart';
+import '../../../data/models/category_with_services.dart';
+import '../../../data/repositories/saloon_repository.dart';            // ✅ EKLENDİ (repo okuma için)
+// Eğer VM’in 3 repo isterse şunları da aç:
+/// import '../../../data/repositories/reservation_repository.dart';
+/// import '../../../data/repositories/favorites_repository.dart';
+
 import '../../view_models/favorites_viewmodel.dart';
 import '../../view_models/saloon_detail_viewmodel.dart';
 import '../../view_models/comments_viewmodel.dart';
 import '../search/search_screen.dart';
 
 class SalonDetailScreen extends StatelessWidget {
-  /// 🔁 Burayı `salonId` olarak tuttuk (tek "o") — proje genelindeki çağrılarla uyumlu.
-  final String salonId;
-  const SalonDetailScreen({super.key, required this.salonId});
+  final String saloonId;
+  const SalonDetailScreen({super.key, required this.saloonId});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<SalonDetailViewModel>(
-      // ViewModel’i burada kurup veriyi microtask ile tetikliyoruz.
-      create: (_) {
-        final vm = SalonDetailViewModel();
-        scheduleMicrotask(() => vm.fetchSalonDetails(salonId));
-        return vm;
-      },
-      child: _SalonDetailBody(salonId: salonId),
+      create: (ctx) =>
+      // ✅ VM kurucusu tek bağımlılık (SaloonRepository) bekliyorsa:
+      SalonDetailViewModel(ctx.read<SaloonRepository>())
+        ..fetchSalonDetails(saloonId),
+
+      // 🔁 Eğer senin VM imzan: SalonDetailViewModel(SaloonRepository, ReservationRepository, FavoritesRepository)
+      // ise üstteki satır yerine ALTTAKİNİ kullan:
+      // SalonDetailViewModel(
+      //   ctx.read<SaloonRepository>(),
+      //   ctx.read<ReservationRepository>(),
+      //   ctx.read<FavoritesRepository>(),
+      // )..fetchSalonDetails(saloonId),
+
+      child: _SalonDetailBody(salonId: saloonId),
     );
   }
 }
@@ -37,7 +52,9 @@ class SalonDetailScreen extends StatelessWidget {
 class _SalonDetailBody extends StatelessWidget {
   final String salonId;
   const _SalonDetailBody({required this.salonId});
+
   String _formatCount(int n) => n > 99 ? '99+' : n.toString();
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<SalonDetailViewModel>();
@@ -45,32 +62,71 @@ class _SalonDetailBody extends StatelessWidget {
     if (vm.isLoading || vm.salon == null) {
       return const Scaffold(
         backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primaryColor)),
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primaryColor),
+        ),
       );
     }
 
+    // Kategoriler yoksa tabsiz gövde
+    if (vm.categories.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Stack(
+          children: [
+            _buildMainContentNoTabs(context, vm),
+            if (vm.totalCount > 0) _buildBottomActionBar(context, vm),
+          ],
+        ),
+      );
+    }
+
+    // Kategoriler varsa dinamik tabbar
     return DefaultTabController(
-      length: 4,
+      length: vm.categories.length,
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: Stack(
           children: [
-            _buildMainContent(context, vm),
-            if (vm.selectedServices.isNotEmpty) _buildBottomActionBar(context, vm),
+            _buildMainContentWithTabs(context, vm),
+            if (vm.totalCount > 0) _buildBottomActionBar(context, vm),
           ],
         ),
       ),
     );
   }
 
-  // --- ANA İÇERİK ---
-  Widget _buildMainContent(BuildContext context, SalonDetailViewModel vm) {
+  // ────────────────────────────────────────────────────────────────────────────
+  // ANA İÇERİK – KATEGORİ YOK
+  // ────────────────────────────────────────────────────────────────────────────
+  Widget _buildMainContentNoTabs(BuildContext context, SalonDetailViewModel vm) {
     final salon = vm.salon!;
+    return NestedScrollView(
+      headerSliverBuilder: (_, __) => [
+        _buildSliverAppBar(context, salon),
+        SliverToBoxAdapter(child: _buildActionButtons(context, salon)),
+        SliverToBoxAdapter(child: _buildDiscountBanner()),
+        SliverToBoxAdapter(child: _buildCalendar(context, vm)),
+      ],
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 100),
+          child: Text(
+            'Bu salonda aktif hizmet bulunmuyor.',
+            style: AppFonts.bodyMedium(color: AppColors.textSecondary),
+          ),
+        ),
+      ),
+    );
+  }
 
-    final List<ServiceModel> ciltBakimServices = salon.services;
-    final List<ServiceModel> nailArtServices = [];
-    final List<ServiceModel> sacKesimServices = [];
-    final List<ServiceModel> sacBakimServices = [];
+  // ────────────────────────────────────────────────────────────────────────────
+  // ANA İÇERİK – KATEGORİLİ (dinamik TabBar)
+  // ────────────────────────────────────────────────────────────────────────────
+  Widget _buildMainContentWithTabs(
+      BuildContext context, SalonDetailViewModel vm) {
+    final salon = vm.salon!;
+    final tabs = vm.categories.map((c) => Tab(text: c.categoryName)).toList();
 
     return NestedScrollView(
       headerSliverBuilder: (_, __) => [
@@ -88,31 +144,26 @@ class _SalonDetailBody extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 color: AppColors.primaryColor,
               ),
-              indicatorPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+              indicatorPadding:
+              const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               isScrollable: true,
-              tabs: const [
-                Tab(text: 'Cilt Bakım'),
-                Tab(text: 'Nail Art'),
-                Tab(text: 'Saç Kesim'),
-                Tab(text: 'Saç Bakım'),
-              ],
+              tabs: tabs,
             ),
           ),
         ),
       ],
       body: TabBarView(
-        children: [
-          _buildServiceList(context, vm, ciltBakimServices),
-          _buildServiceList(context, vm, nailArtServices),
-          _buildServiceList(context, vm, sacKesimServices),
-          _buildServiceList(context, vm, sacBakimServices),
-        ],
+        children: vm.categories
+            .map((cat) => _buildCategoryServiceList(context, vm, cat))
+            .toList(),
       ),
     );
   }
 
-  /// SliverAppBar (resim + gradient + başlık)
+  // ────────────────────────────────────────────────────────────────────────────
+  // SliverAppBar (resim + gradient + başlık)
+  // ────────────────────────────────────────────────────────────────────────────
   Widget _buildSliverAppBar(BuildContext context, SaloonModel salon) {
     return SliverAppBar(
       expandedHeight: 300,
@@ -140,19 +191,23 @@ class _SalonDetailBody extends StatelessWidget {
             Image.network(
               salon.titlePhotoUrl ?? '',
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(color: AppColors.borderColor),
+              errorBuilder: (_, __, ___) =>
+                  Container(color: AppColors.borderColor),
             ),
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                   colors: [Colors.transparent, Colors.black54, Colors.black87],
                   stops: [0.5, 0.8, 1.0],
                 ),
               ),
             ),
             Positioned(
-              bottom: 16, left: 16, right: 16,
+              bottom: 16,
+              left: 16,
+              right: 16,
               child: _buildHeaderContent(salon),
             ),
           ],
@@ -161,31 +216,44 @@ class _SalonDetailBody extends StatelessWidget {
     );
   }
 
-  /// Başlık alanı
+  // ────────────────────────────────────────────────────────────────────────────
+  // Başlık alanı
+  // ────────────────────────────────────────────────────────────────────────────
   Widget _buildHeaderContent(SaloonModel salon) {
-    final serviceTags = salon.services.map((s) => s.serviceName).take(3).toList();
+    final serviceTags =
+    salon.services.map((s) => s.serviceName).take(3).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(salon.saloonName, style: AppFonts.poppinsBold(fontSize: 26, color: Colors.white)),
+        Text(salon.saloonName,
+            style: AppFonts.poppinsBold(fontSize: 26, color: Colors.white)),
         const SizedBox(height: 8),
         Row(
           children: [
             Text('☆ ${salon.rating.toStringAsFixed(1)}',
-                style: AppFonts.bodyMedium(color: Colors.white.withOpacity(0.9))),
-            Text(' • ', style: AppFonts.bodyMedium(color: Colors.white.withOpacity(0.9))),
+                style: AppFonts.bodyMedium(
+                    color: Colors.white.withOpacity(0.9))),
+            Text(' • ',
+                style: AppFonts.bodyMedium(
+                    color: Colors.white.withOpacity(0.9))),
             Text(salon.saloonAddress?.split(',').first ?? 'İstanbul',
-                style: AppFonts.bodyMedium(color: Colors.white.withOpacity(0.9))),
-            Text(' • ', style: AppFonts.bodyMedium(color: Colors.white.withOpacity(0.9))),
-            Text('5 Km', style: AppFonts.bodyMedium(color: Colors.white.withOpacity(0.9))),
+                style: AppFonts.bodyMedium(
+                    color: Colors.white.withOpacity(0.9))),
+            Text(' • ',
+                style: AppFonts.bodyMedium(
+                    color: Colors.white.withOpacity(0.9))),
+            Text('5 Km',
+                style: AppFonts.bodyMedium(
+                    color: Colors.white.withOpacity(0.9))),
           ],
         ),
         const SizedBox(height: 8),
         Text(
           salon.saloonDescription ?? 'Bu salon için bir açıklama mevcut değil.',
-          style: AppFonts.bodySmall(color: Colors.white.withOpacity(0.85)),
+          style:
+          AppFonts.bodySmall(color: Colors.white.withOpacity(0.85)),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
@@ -194,19 +262,25 @@ class _SalonDetailBody extends StatelessWidget {
           Wrap(
             spacing: 8,
             children: serviceTags
-                .map((tag) => Chip(
-              label: Text(tag, style: AppFonts.bodySmall(color: AppColors.textPrimary)),
-              backgroundColor: Colors.white.withOpacity(0.9),
-              padding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-            ))
+                .map(
+                  (tag) => Chip(
+                label: Text(tag,
+                    style: AppFonts.bodySmall(
+                        color: AppColors.textPrimary)),
+                backgroundColor: Colors.white.withOpacity(0.9),
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
+            )
                 .toList(),
           ),
       ],
     );
   }
 
-  /// Aksiyonlar + Yorumlar butonu
+  // ────────────────────────────────────────────────────────────────────────────
+  // Aksiyonlar + Yorumlar butonu
+  // ────────────────────────────────────────────────────────────────────────────
   Widget _buildActionButtons(BuildContext context, SaloonModel salon) {
     final favorites = context.watch<FavoritesViewModel>();
     final isFavorite = favorites.isSalonFavorite(salon.saloonId);
@@ -221,7 +295,8 @@ class _SalonDetailBody extends StatelessWidget {
               isFavorite ? Icons.favorite : Icons.favorite_border,
               'Favoriler',
                   () => favorites.toggleFavorite(salon.saloonId, salon: salon),
-              color: isFavorite ? Colors.red.shade400 : AppColors.textPrimary,
+              color:
+              isFavorite ? Colors.red.shade400 : AppColors.textPrimary,
             ),
             const SizedBox(width: 16),
             _infoIcon(Icons.location_on_outlined, "Konum'a git", () {}),
@@ -230,35 +305,40 @@ class _SalonDetailBody extends StatelessWidget {
           ]),
           TextButton(
             onPressed: () {
-              // Yorumlar ekranını route‑scoped Provider ile aç
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ChangeNotifierProvider<CommentsViewModel>(
-                    // ✅ CommentsViewModel sizde parametresiz ise:
-                    create: (_) => CommentsViewModel()..fetchComments(salon.saloonId),
-                    // Eğer CommentsViewModel(repo) imzanız varsa yukarıyı şu yapın:
-                    // create: (ctx) => CommentsViewModel(ctx.read<CommentRepository>())..fetchComments(salon.saloonId),
-                    child: CommentsScreen(saloonId: salon.saloonId),
-                  ),
+                  builder: (_) =>
+                      ChangeNotifierProvider<CommentsViewModel>(
+                        create: (_) => CommentsViewModel()
+                          ..fetchComments(salon.saloonId),
+                        child: CommentsScreen(saloonId: salon.saloonId),
+                      ),
                 ),
               );
             },
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             child: Column(
               children: [
                 Row(children: [
-                  const Icon(Icons.star_rounded, color: AppColors.starColor, size: 22),
+                  const Icon(Icons.star_rounded,
+                      color: AppColors.starColor, size: 22),
                   const SizedBox(width: 4),
-                  Text(salon.rating.toStringAsFixed(1),
-                      style: AppFonts.poppinsBold(fontSize: 16, color: AppColors.textPrimary)),
+                  Text(
+                    salon.rating.toStringAsFixed(1),
+                    style: AppFonts.poppinsBold(
+                        fontSize: 16, color: AppColors.textPrimary),
+                  ),
                 ]),
                 Text(
                   '${_formatCount(salon.commentCount)} yorum',
-                  style: AppFonts.bodySmall(color: AppColors.textSecondary),
+                  style: AppFonts.bodySmall(
+                      color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -268,7 +348,9 @@ class _SalonDetailBody extends StatelessWidget {
     );
   }
 
-  Widget _infoIcon(IconData icon, String label, VoidCallback onTap, {Color? color}) {
+  Widget _infoIcon(
+      IconData icon, String label, VoidCallback onTap,
+      {Color? color}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -277,15 +359,21 @@ class _SalonDetailBody extends StatelessWidget {
         children: [
           Icon(icon, color: color ?? AppColors.textPrimary, size: 26),
           const SizedBox(height: 6),
-          Text(label, style: AppFonts.bodySmall(color: AppColors.textSecondary)),
+          Text(label,
+              style:
+              AppFonts.bodySmall(color: AppColors.textSecondary)),
         ],
       ),
     );
   }
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // İndirim bandı
+  // ────────────────────────────────────────────────────────────────────────────
   Widget _buildDiscountBanner() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding:
+      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       decoration: BoxDecoration(
         color: AppColors.cardColor,
@@ -294,19 +382,35 @@ class _SalonDetailBody extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Text('%', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primaryColor)),
+          const Text('%',
+              style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryColor)),
           const SizedBox(width: 16),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('50% indirim', style: AppFonts.poppinsBold(color: AppColors.textPrimary)),
-            Text('FREE50 Kodu ile', style: AppFonts.bodySmall(color: AppColors.textSecondary)),
-          ]),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('50% indirim',
+                  style:
+                  AppFonts.poppinsBold(color: AppColors.textPrimary)),
+              Text('FREE50 Kodu ile',
+                  style: AppFonts.bodySmall(
+                      color: AppColors.textSecondary)),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCalendar(BuildContext context, SalonDetailViewModel vm) {
-    final weekDates = List.generate(7, (i) => DateTime.now().add(Duration(days: i)));
+  // ────────────────────────────────────────────────────────────────────────────
+  // Takvim (haftalık)
+  // ────────────────────────────────────────────────────────────────────────────
+  Widget _buildCalendar(
+      BuildContext context, SalonDetailViewModel vm) {
+    final weekDates =
+    List.generate(7, (i) => DateTime.now().add(Duration(days: i)));
     return SizedBox(
       height: 70,
       child: ListView.builder(
@@ -324,19 +428,31 @@ class _SalonDetailBody extends StatelessWidget {
               width: 55,
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primaryColor : AppColors.cardColor,
+                color: isSelected
+                    ? AppColors.primaryColor
+                    : AppColors.cardColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isSelected ? Colors.transparent : AppColors.borderColor),
+                border: Border.all(
+                  color: isSelected
+                      ? Colors.transparent
+                      : AppColors.borderColor,
+                ),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(DateFormat('dd', 'tr_TR').format(date),
                       style: AppFonts.poppinsBold(
-                          color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary)),
+                        color: isSelected
+                            ? AppColors.textOnPrimary
+                            : AppColors.textPrimary,
+                      )),
                   Text(DateFormat('MMM', 'tr_TR').format(date),
                       style: AppFonts.bodySmall(
-                          color: isSelected ? AppColors.textOnPrimary : AppColors.textSecondary)),
+                        color: isSelected
+                            ? AppColors.textOnPrimary
+                            : AppColors.textSecondary,
+                      )),
                 ],
               ),
             ),
@@ -346,7 +462,103 @@ class _SalonDetailBody extends StatelessWidget {
     );
   }
 
-  Widget _buildServiceList(BuildContext context, SalonDetailViewModel vm, List<ServiceModel> services) {
+  // ────────────────────────────────────────────────────────────────────────────
+  // Kategori altı hizmet listesi (SaloonServiceItem)
+  // ────────────────────────────────────────────────────────────────────────────
+  Widget _buildCategoryServiceList(BuildContext context,
+      SalonDetailViewModel vm, CategoryWithServices cat) {
+    final services = cat.services;
+    if (services.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 100),
+          child: Text(
+            'Bu kategoride hizmet bulunmuyor.',
+            style: AppFonts.bodyMedium(color: AppColors.textSecondary),
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+      itemCount: services.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, index) {
+        final item = services[index];
+        final selected = vm.isSelected(item.serviceId);
+        final qty = selected
+            ? vm.selectedItems
+            .firstWhere(
+              (e) => e.service.serviceId == item.serviceId,
+        )
+            .quantity
+            : 0;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(.06), blurRadius: 8)
+            ],
+          ),
+          child: ListTile(
+            contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            leading: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(
+                'assets/map_placeholder.png',
+                width: 64,
+                height: 64,
+                fit: BoxFit.cover,
+              ),
+            ),
+            title: Text(item.serviceName,
+                style: AppFonts.poppinsBold(fontSize: 15)),
+            subtitle: Row(
+              children: [
+                Text('₺${item.price.toStringAsFixed(0)}',
+                    style: AppFonts.bodyMedium(
+                        color: AppColors.textSecondary)),
+                const SizedBox(width: 12),
+                const Icon(Icons.watch_later_outlined,
+                    size: 16, color: AppColors.textSecondary),
+                const SizedBox(width: 4),
+                Text('${item.estimatedMinutes} Dk',
+                    style: AppFonts.bodySmall(
+                        color: AppColors.textSecondary)),
+              ],
+            ),
+            trailing: selected
+                ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  onPressed: () => vm.decQty(item.serviceId),
+                  icon: const Icon(Icons.remove_circle_outline),
+                ),
+                Text('$qty', style: AppFonts.bodyMedium()),
+                IconButton(
+                  onPressed: () => vm.incQty(item.serviceId),
+                  icon: const Icon(Icons.add_circle_outline),
+                ),
+              ],
+            )
+                : OutlinedButton(
+              onPressed: () => vm.toggle(item),
+              child: const Text('Ekle +'),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // (GERİYE UYUMLU) Eski ServiceModel listesi için builder – projede referans varsa kalsın
+  Widget _buildServiceList(BuildContext context, SalonDetailViewModel vm,
+      List<ServiceModel> services) {
     if (services.isEmpty) {
       return Center(
         child: Padding(
@@ -370,34 +582,41 @@ class _SalonDetailBody extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  'assets/map_placeholder.png',
-                  width: 80, height: 80, fit: BoxFit.cover,
-                ),
+                child: Image.asset('assets/map_placeholder.png',
+                    width: 80, height: 80, fit: BoxFit.cover),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(service.serviceName, style: AppFonts.poppinsBold(fontSize: 15)),
+                    Text(service.serviceName,
+                        style: AppFonts.poppinsBold(fontSize: 15)),
                     const SizedBox(height: 4),
-                    Text('\$${service.basePrice.toStringAsFixed(0)}',
-                        style: AppFonts.bodyMedium(color: AppColors.textSecondary)),
+                    Text('₺${service.basePrice.toStringAsFixed(0)}',
+                        style: AppFonts.bodyMedium(
+                            color: AppColors.textSecondary)),
                     const SizedBox(height: 4),
                     Text('${service.estimatedTime.inMinutes} Dk',
-                        style: AppFonts.bodySmall(color: AppColors.textSecondary)),
+                        style: AppFonts.bodySmall(
+                            color: AppColors.textSecondary)),
                   ],
                 ),
               ),
               OutlinedButton(
                 onPressed: () => vm.toggleService(service),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: isSelected ? AppColors.textOnPrimary : AppColors.primaryColor,
-                  backgroundColor: isSelected ? AppColors.primaryColor : Colors.transparent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  foregroundColor: isSelected
+                      ? AppColors.textOnPrimary
+                      : AppColors.primaryColor,
+                  backgroundColor:
+                  isSelected ? AppColors.primaryColor : Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                   side: BorderSide(
-                    color: isSelected ? Colors.transparent : AppColors.primaryColor.withOpacity(0.5),
+                    color: isSelected
+                        ? Colors.transparent
+                        : AppColors.primaryColor.withOpacity(0.5),
                   ),
                 ),
                 child: Text(isSelected ? 'Çıkar' : 'Ekle +'),
@@ -409,34 +628,79 @@ class _SalonDetailBody extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomActionBar(BuildContext context, SalonDetailViewModel vm) {
+  // ────────────────────────────────────────────────────────────────────────────
+  // Alt eylem barı (CheckoutScreen’e yönlendirme)
+  // ────────────────────────────────────────────────────────────────────────────
+  Widget _buildBottomActionBar(
+      BuildContext context, SalonDetailViewModel vm) {
     return Positioned(
-      bottom: 20, left: 20, right: 20,
+      bottom: 20,
+      left: 20,
+      right: 20,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding:
+        const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
           color: AppColors.primaryColor,
           borderRadius: BorderRadius.circular(15),
-          boxShadow: [BoxShadow(color: AppColors.primaryColor.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))],
-        ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            Text('${vm.selectedServices.length} hizmet',
-                style: AppFonts.bodySmall(color: AppColors.textOnPrimary.withOpacity(0.8))),
-            Text('\$${vm.totalPrice.toStringAsFixed(0)}',
-                style: AppFonts.poppinsBold(color: AppColors.textOnPrimary, fontSize: 20)),
-          ]),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.textOnPrimary,
-              foregroundColor: AppColors.primaryColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryColor.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
             ),
-            child: Text('Randevu Al', style: AppFonts.poppinsBold()),
-          ),
-        ]),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${vm.totalCount} hizmet',
+                  style: AppFonts.bodySmall(
+                    color: AppColors.textOnPrimary.withOpacity(0.8),
+                  ),
+                ),
+                Text(
+                  '₺${vm.totalPrice.toStringAsFixed(0)}',
+                  style: AppFonts.poppinsBold(
+                    color: AppColors.textOnPrimary,
+                    fontSize: 20,
+                  ),
+                ),
+              ],
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (vm.totalCount <= 0 || vm.salon == null) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CheckoutScreen(
+                      saloonId: vm.salon!.saloonId,
+                      date: vm.selectedDate,
+                      time: vm.selectedTime,
+                      items: vm.selectedItems,
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.textOnPrimary,
+                foregroundColor: AppColors.primaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24, vertical: 12),
+              ),
+              child: Text('Randevu Al', style: AppFonts.poppinsBold()),
+            ),
+          ],
+        ),
       ),
     );
   }
