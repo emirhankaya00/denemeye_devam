@@ -1,3 +1,5 @@
+// lib/view/view_models/saloon_detail_viewmodel.dart
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -10,123 +12,124 @@ import '../../data/repositories/reservation_repository.dart';
 import '../../data/repositories/saloon_repository.dart';
 
 class SalonDetailViewModel extends ChangeNotifier {
+  // Sizin sağladığınız repository'ler kullanılıyor.
   final SaloonRepository _saloonRepository = SaloonRepository(Supabase.instance.client);
   final ReservationRepository _reservationRepository = ReservationRepository(Supabase.instance.client);
   final FavoritesRepository _favoritesRepository = FavoritesRepository(Supabase.instance.client);
 
   // --- STATE DEĞİŞKENLERİ ---
-  bool isFavorite = false;
-  bool _isLoading = true;
-  bool get isLoading => _isLoading;
-
   SaloonModel? _salon;
   SaloonModel? get salon => _salon;
 
-  List<PersonalModel> _employees = [];
-  List<PersonalModel> get employees => _employees;
+  bool _isLoading = true;
+  bool get isLoading => _isLoading;
 
-  // Randevu alma süreci için
-  DateTime? selectedDate;
-  String? selectedTimeSlot;
-  ServiceModel? selectedService;
-  PersonalModel? selectedEmployee;
+  bool _isFavorite = false;
+  bool get isFavorite => _isFavorite;
 
-  // --- ANA VERİ ÇEKME FONKSİYONU ---
+  // --- YENİ TASARIM İÇİN GÜNCELLENEN STATE'LER ---
+  DateTime _selectedDate = DateTime.now();
+  DateTime get selectedDate => _selectedDate;
+
+  // Tek bir servis yerine seçilen servislerin LİSTESİ tutuluyor.
+  final List<ServiceModel> _selectedServices = [];
+  List<ServiceModel> get selectedServices => List.unmodifiable(_selectedServices);
+
+  // Seçilen servislerin toplam fiyatını anlık olarak hesaplayan getter.
+  double get totalPrice {
+    if (_selectedServices.isEmpty) return 0.0;
+    return _selectedServices.fold(0.0, (sum, item) => sum + item.basePrice);
+  }
+
+  // --- VERİ ÇEKME VE YÖNETİM FONKSİYONLARI ---
+
   Future<void> fetchSalonDetails(String salonId) async {
     _isLoading = true;
     notifyListeners();
 
     try {
+      // Gerekli tüm verileri paralel olarak çekiyoruz.
       final results = await Future.wait([
         _saloonRepository.getSaloonById(salonId),
-        _saloonRepository.getEmployeesBySaloon(salonId),
+        _favoritesRepository.isFavorite(salonId),
+        // _saloonRepository.getEmployeesBySaloon(salonId), // İhtiyaç halinde eklenebilir.
       ]);
 
       _salon = results[0] as SaloonModel?;
-      _employees = results[1] as List<PersonalModel>;
-      selectedDate = DateTime.now();
+      _isFavorite = results[1] as bool;
+      // _employees = results[2] as List<PersonalModel>;
+
     } catch (e) {
-      debugPrint("fetchSalonDetails Hata: $e");
+      debugPrint("SalonDetailViewModel Hata: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // --- RANDEVU SÜRECİ YÖNETİMİ ---
-  void selectNewDate(DateTime date) {
-    selectedDate = date;
-    // Yeni tarih seçildiğinde, saat/çalışan gibi seçimleri sıfırla
-    selectedTimeSlot = null;
-    selectedEmployee = null;
-    notifyListeners();
-  }
-
-  void selectTime(String time) {
-    selectedTimeSlot = time;
-    notifyListeners();
-  }
-
-  void selectServiceForAppointment(ServiceModel service) {
-    selectedService = service;
-    notifyListeners();
-  }
-
-  void selectEmployeeForAppointment(PersonalModel employee) {
-    selectedEmployee = employee;
-    notifyListeners();
-  }
-
-  // --- RANDEVU OLUŞTURMA FONKSİYONU ---
-  Future<void> createReservation() async {
-    // Gerekli tüm bilgiler seçilmiş mi diye kontrol et
-    if (salon == null ||
-        selectedDate == null ||
-        selectedTimeSlot == null ||
-        selectedService == null ||
-        selectedEmployee == null) {
-      throw Exception('Lütfen randevu için tüm alanları seçin.');
-    }
-
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) {
-      throw Exception('Randevu oluşturmak için giriş yapmalısınız.');
-    }
-
-    final newReservation = ReservationModel(
-      reservationId: '', // DB kendi atayacak
-      userId: userId,
-      saloonId: salon!.saloonId,
-      personalId: selectedEmployee!.personalId,
-      reservationDate: selectedDate!,
-      reservationTime: selectedTimeSlot!,
-      totalPrice: selectedService!.basePrice, // Fiyatı hizmetten al
-      status: ReservationStatus.pending, // Başlangıç durumu
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-
-    // Repository aracılığıyla randevuyu veritabanına kaydet
-    await _reservationRepository.createReservation(newReservation);
-
-    // İşlem sonrası seçimleri temizle
-    selectedTimeSlot = null;
-    selectedService = null;
-    selectedEmployee = null;
-    notifyListeners();
-  }
+  // --- FAVORİ YÖNETİMİ ---
   Future<void> toggleFavorite() async {
     if (salon == null) return;
 
-    // Mevcut durumun tersini yap
-    if (isFavorite) {
-      await _favoritesRepository.removeFavorite(salon!.saloonId);
-    } else {
-      await _favoritesRepository.addFavorite(salon!.saloonId);
-    }
-
-    // Durumu güncelle ve arayüzü bilgilendir
-    isFavorite = !isFavorite;
+    // Geçici olarak favori durumunu anında güncelleyerek arayüzü akıcı hale getiriyoruz.
+    _isFavorite = !_isFavorite;
     notifyListeners();
+
+    try {
+      if (_isFavorite) {
+        await _favoritesRepository.addFavorite(salon!.saloonId);
+      } else {
+        await _favoritesRepository.removeFavorite(salon!.saloonId);
+      }
+    } catch (e) {
+      // Hata durumunda eski duruma geri dön
+      _isFavorite = !_isFavorite;
+      notifyListeners();
+      debugPrint("Favori işlemi hatası: $e");
+    }
+  }
+
+  // --- RANDEVU SÜRECİ YÖNETİMİ ---
+
+  void selectNewDate(DateTime date) {
+    _selectedDate = date;
+    notifyListeners();
+  }
+
+  // Bir servisi seçme veya seçimi kaldırma mantığı.
+  void toggleService(ServiceModel service) {
+    if (_selectedServices.contains(service)) {
+      _selectedServices.remove(service);
+    } else {
+      _selectedServices.add(service);
+    }
+    notifyListeners(); // Toplam fiyatın ve butonların güncellenmesi için arayüzü bilgilendir.
+  }
+
+  // Bir servisin listede (seçili) olup olmadığını kontrol eder.
+  bool isServiceSelected(ServiceModel service) {
+    return _selectedServices.contains(service);
+  }
+
+  // Seçilen tüm servisleri ve seçimleri temizler.
+  void clearSelections() {
+    _selectedServices.clear();
+    // selectedTimeSlot = null; // Zaman seçimi varsa o da temizlenmeli.
+    notifyListeners();
+  }
+
+  // TODO: Randevu oluşturma fonksiyonu, artık bir liste olan _selectedServices'i
+  // ve totalPrice'ı kullanarak güncellenmelidir.
+  Future<void> createReservation() async {
+    if (salon == null || selectedServices.isEmpty) {
+      throw Exception('Lütfen en az bir hizmet seçin.');
+    }
+    // ...
+    // Gerekli mantık (örneğin reservation_services tablosuna çoklu kayıt)
+    // burada uygulanmalıdır.
+    // ...
+
+    // İşlem sonrası seçimleri temizle
+    clearSelections();
   }
 }

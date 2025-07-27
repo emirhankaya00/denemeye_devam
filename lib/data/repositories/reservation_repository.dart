@@ -1,5 +1,5 @@
-// lib/repositories/reservation_repository.dart
-import 'package:flutter/cupertino.dart';
+// lib/data/repositories/reservation_repository.dart
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/reservation_model.dart';
@@ -12,42 +12,55 @@ class ReservationRepository {
 
   Future<void> createReservation(ReservationModel reservation) async {
     try {
-      // Modeli JSON'a çevirip 'reservations' tablosuna ekliyoruz.
-      // reservationId veritabanı tarafından otomatik oluşturulacağı için yollamıyoruz.
       final reservationData = reservation.toJson()..remove('reservation_id');
-
       await _client.from('reservations').insert(reservationData);
-
     } catch (e) {
       debugPrint('createReservation Hata: $e');
       throw Exception('Randevu oluşturulurken bir hata oluştu.');
     }
   }
+
   Future<List<ReservationModel>> getReservationsForUser() async {
     if (_userId == null) return [];
 
     try {
-      // Sorguyu veritabanı şemasına uygun hale getiriyoruz.
+      // SORGUNUZ ZATEN DOĞRU: Rezervasyonları, ilişkili salon ve hizmet bilgileriyle birlikte çekiyoruz.
+      // Supabase, 'saloons' tablosundan ilgili kaydı ve ara tablodan ('reservation_services')
+      // hizmet detaylarını ('services') getirecektir.
       final data = await _client
           .from('reservations')
-          .select('*, saloons(saloon_name, title_photo_url), reservation_services(*, services(*))') // DEĞİŞTİ: services -> reservation_services(*, services(*))
+          .select('*, saloons(*), reservation_services(*, services(*))')
           .eq('user_id', _userId!);
 
-      // Gelen veriyi ReservationModel'e çeviriyoruz.
-      // Model'i de bu iç içe yapıyı okuyacak şekilde güncellememiz gerekecek.
-      return data.map((item) => ReservationModel.fromJson(item)).toList();
+      // Gelen verinin doğru parse edildiğinden emin olalım.
+      // Hata ayıklama için gelen veriyi yazdırabilirsiniz: debugPrint(data.toString());
+
+      if (data.isEmpty) {
+        return [];
+      }
+
+      // Gelen her bir JSON objesini ReservationModel'e çeviriyoruz.
+      // Hata yönetimi ekleyerek hangi verinin parse edilemediğini görebiliriz.
+      return data.map((item) {
+        try {
+          return ReservationModel.fromJson(item);
+        } catch (e) {
+          debugPrint('Rezervasyon parse hatası: $e - Veri: $item');
+          return null;
+        }
+      }).whereType<ReservationModel>().toList(); // Sadece başarılı parse edilenleri listeye ekle
+
     } catch (e) {
       debugPrint('getReservationsForUser Hata: $e');
       throw Exception('Randevular getirilirken bir hata oluştu.');
     }
   }
 
-  /// Bir randevunun durumunu günceller (örn: iptal etme).
   Future<void> updateReservationStatus(String reservationId, ReservationStatus status) async {
     try {
       await _client
           .from('reservations')
-          .update({'status': status.name}) // Enum'ı string'e çeviriyoruz
+          .update({'status': status.name})
           .eq('reservation_id', reservationId);
     } catch (e) {
       debugPrint('updateReservationStatus Hata: $e');

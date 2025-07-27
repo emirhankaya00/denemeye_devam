@@ -8,12 +8,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart'; // <-- 1. BU SATIRI EKLEYİN
 
-// Düzeltme: Eksik olan ve hata veren importu ekliyoruz.
 import 'package:denemeye_devam/view/view_models/filter_viewmodel.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // <-- 2. BU SATIRI EKLEYİN
+  // Türkçe tarih formatlamasını başlatmak için.
+  await initializeDateFormatting('tr_TR', null);
+
   await dotenv.load(fileName: ".env");
 
   await Supabase.initialize(
@@ -29,7 +34,6 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => SearchViewModel()),
         ChangeNotifierProvider(create: (_) => AppointmentsViewModel()),
-        // Düzeltme: Yeni FilterViewModel'ı provider listesine ekliyoruz.
         ChangeNotifierProvider(create: (_) => FilterViewModel()),
       ],
       child: const MyApp(),

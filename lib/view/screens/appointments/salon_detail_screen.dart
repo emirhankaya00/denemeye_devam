@@ -1,294 +1,292 @@
 // lib/features/saloons/screens/salon_detail_screen.dart
 
-// GEREKLİ TÜM IMPORT'LAR BURADA
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'all_reviews_screen.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_fonts.dart';
-import '../../../data/models/comment_model.dart';
 import '../../../data/models/saloon_model.dart';
 import '../../../data/models/service_model.dart';
 import '../../view_models/favorites_viewmodel.dart';
 import '../../view_models/saloon_detail_viewmodel.dart';
+// Diğer importlarınız...
 
 class SalonDetailScreen extends StatefulWidget {
   final String salonId;
-
   const SalonDetailScreen({super.key, required this.salonId});
 
   @override
   State<SalonDetailScreen> createState() => _SalonDetailScreenState();
 }
 
-class _SalonDetailScreenState extends State<SalonDetailScreen> {
+// Sekmelerin (TabBar) yönetimi için SingleTickerProviderStateMixin ekliyoruz.
+class _SalonDetailScreenState extends State<SalonDetailScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
     initializeDateFormatting('tr_TR', null);
-    // Verileri çekmek için ViewModel'ı tetikle
+    // TODO: Hizmet kategorilerine göre sekme sayısı dinamik olmalı.
+    // Şimdilik tasarımda 4 kategori olduğu için 4 olarak ayarlıyoruz.
+    _tabController = TabController(length: 4, vsync: this);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<SalonDetailViewModel>(context, listen: false)
-          .fetchSalonDetails(widget.salonId);
+      // ViewModel'i burada dinlemeye başlıyoruz.
+      Provider.of<SalonDetailViewModel>(context, listen: false).fetchSalonDetails(widget.salonId);
     });
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // ViewModel'ı burada oluşturuyoruz, böylece initState'de context'e erişim sorunu yaşamayız.
+    // ViewModel'i Provider ile widget ağacına dahil ediyoruz.
     return ChangeNotifierProvider(
       create: (_) => SalonDetailViewModel()..fetchSalonDetails(widget.salonId),
       child: Consumer<SalonDetailViewModel>(
         builder: (context, viewModel, child) {
+          if (viewModel.isLoading || viewModel.salon == null) {
+            return const Scaffold(
+              backgroundColor: AppColors.background,
+              body: Center(child: CircularProgressIndicator(color: AppColors.primaryColor)),
+            );
+          }
+          // Ana Scaffold yapısı Stack ile sarmalanıyor.
+          // Bu, en altta "Randevu Al" barını gösterebilmemizi sağlar.
           return Scaffold(
-            // Arka plan rengi tüm sayfada tutarlı
             backgroundColor: AppColors.background,
-            // AppBar artık sayfanın arkasına geçmiyor
-            appBar: _buildAppBar(context, viewModel),
-            body: viewModel.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : viewModel.salon == null
-                ? const Center(child: Text('Salon bilgileri alınamadı.'))
-                : _buildContent(context, viewModel),
+            body: Stack(
+              children: [
+                _buildMainContent(context, viewModel),
+                // Seçili servis varsa, alttaki barı göster.
+                if (viewModel.selectedServices.isNotEmpty)
+                  _buildBottomActionBar(context, viewModel),
+              ],
+            ),
           );
         },
       ),
     );
   }
 
-  AppBar _buildAppBar(BuildContext context, SalonDetailViewModel viewModel) {
-    final favoritesViewModel = context.watch<FavoritesViewModel>();
-    final bool isCurrentlyFavorite = viewModel.salon != null
-        ? favoritesViewModel.isSalonFavorite(viewModel.salon!.saloonId)
-        : false;
-
-    return AppBar(
-      elevation: 1.0, // Düz tasarım için hafif gölge
-      backgroundColor: AppColors.primaryColor, // Ana renk
-      foregroundColor: AppColors.textOnPrimary, // Geri tuşu ve başlık rengi
-      title: Text(viewModel.salon?.saloonName ?? 'Salon Detayı'),
-      actions: [
-        IconButton(
-          icon: Icon(
-            isCurrentlyFavorite ? Icons.favorite : Icons.favorite_border,
-            color: isCurrentlyFavorite ? Colors.red.shade400 : AppColors.textOnPrimary,
-          ),
-          onPressed: () {
-            if (viewModel.salon != null) {
-              favoritesViewModel.toggleFavorite(
-                viewModel.salon!.saloonId,
-                salon: viewModel.salon,
-              );
-            }
-          },
-        ),
-        const SizedBox(width: 10),
-      ],
-    );
-  }
-
-  Widget _buildContent(BuildContext context, SalonDetailViewModel viewModel) {
+  // --- ANA İÇERİK (KAYDIRILABİLİR ALAN) ---
+  Widget _buildMainContent(BuildContext context, SalonDetailViewModel viewModel) {
     final salon = viewModel.salon!;
 
-    // Örnek yorumlar (veri kaynağından gelecek)
-    final List<CommentModel> allComments = [
-      CommentModel(
-        commentId: '1',
-        userId: 'user1',
-        saloonId: 'salon1',
-        rating: 5,
-        commentText:
-        'Harika bir salon! Hizmet kalitesi ve personel çok iyiydi. Kesinlikle tavsiye ederim.',
-        createdAt: DateTime.now().subtract(const Duration(days: 10)),
-        updatedAt: DateTime.now(),
-      ),
-    ];
+    // TODO: Bu hizmet listeleri, modelinizdeki kategori bilgisine göre doldurulmalı.
+    final List<ServiceModel> ciltBakimServices = salon.services;
+    final List<ServiceModel> nailArtServices = []; // Örnek
+    final List<ServiceModel> sacKesimServices = []; // Örnek
+    final List<ServiceModel> sacBakimServices = []; // Örnek
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    // NestedScrollView, iç içe kaydırılabilir alanlar oluşturmamızı sağlar.
+    // headerSliverBuilder: Üstte kalan, kaydırıldıkça değişen kısım.
+    // body: Altta kalan, sekmelere göre içeriği değişen kısım.
+    return NestedScrollView(
+      headerSliverBuilder: (context, innerBoxIsScrolled) {
+        return [
+          _buildSliverAppBar(context, salon),
+          SliverToBoxAdapter(child: _buildSalonInfoCard(context, salon)),
+          SliverToBoxAdapter(child: _buildDiscountBanner()),
+          SliverToBoxAdapter(child: _buildCalendar(context, viewModel)),
+          // SliverPersistentHeader, TabBar'ın ekranın üstüne sabitlenmesini sağlar.
+          SliverPersistentHeader(
+            delegate: _SliverAppBarDelegate(
+              TabBar(
+                controller: _tabController,
+                labelColor: AppColors.textOnPrimary,
+                unselectedLabelColor: AppColors.textPrimary,
+                indicator: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: AppColors.primaryColor,
+                ),
+                indicatorPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                isScrollable: true,
+                tabs: const [
+                  Tab(text: 'Cilt Bakım'),
+                  Tab(text: 'Nail Art'),
+                  Tab(text: 'Saç Kesim'),
+                  Tab(text: 'Saç Bakım'),
+                ],
+              ),
+            ),
+            pinned: true, // Üste yapışmasını sağlar.
+          ),
+        ];
+      },
+      // TabBar'a bağlı olarak gösterilecek içerikler.
+      body: TabBarView(
+        controller: _tabController,
         children: [
-          _buildHeader(context, salon),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildSectionTitle('Takvim'),
-                IconButton(
-                  onPressed: () => _selectDateFromPicker(context, viewModel),
-                  icon: const Icon(Icons.calendar_month, color: AppColors.primaryColor, size: 28),
-                ),
-              ],
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Divider(color: AppColors.borderColor, thickness: 1),
-          ),
-          _buildCalendar(context, viewModel),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: ElevatedButton(
-              onPressed: () =>
-                  _showAppointmentBookingBottomSheet(context, viewModel),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor,
-                foregroundColor: AppColors.textOnPrimary,
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-              ),
-              child: Text(
-                'Randevu Al',
-                style: AppFonts.poppinsBold(fontSize: 18),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: _buildSectionTitle('Hizmetler'),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Divider(color: AppColors.borderColor, thickness: 1),
-          ),
-          const SizedBox(height: 8),
-          _buildServicesSection(salon.services),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: _buildSectionTitle('Galeri'),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Divider(color: AppColors.borderColor, thickness: 1),
-          ),
-          const SizedBox(height: 8),
-          _buildGallerySection(),
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: _buildSectionTitle('Müşteri Yorumları'),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Divider(color: AppColors.borderColor, thickness: 1),
-          ),
-          const SizedBox(height: 8),
-          _buildCustomerReviewsSection(allComments),
-          const SizedBox(height: 20),
-          _buildAddReviewSection(),
-          const SizedBox(height: 40),
+          _buildServiceList(context, viewModel, ciltBakimServices),
+          _buildServiceList(context, viewModel, nailArtServices),
+          _buildServiceList(context, viewModel, sacKesimServices),
+          _buildServiceList(context, viewModel, sacBakimServices),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, SaloonModel salon) {
+  // --- WIDGET BÖLÜMLERİ ---
+
+  Widget _buildSliverAppBar(BuildContext context, SaloonModel salon) {
+    final favoritesViewModel = context.watch<FavoritesViewModel>();
+    final bool isFavorite = favoritesViewModel.isSalonFavorite(salon.saloonId);
+
+    return SliverAppBar(
+      expandedHeight: 220.0, // Resmin başlangıçtaki yüksekliği
+      floating: false,
+      pinned: true, // Kaydırıldığında AppBar'ın yukarıda kalmasını sağlar
+      backgroundColor: AppColors.primaryColor,
+      elevation: 1.0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+      actions: [
+        IconButton(
+          icon: Icon(Icons.search, color: Colors.white),
+          onPressed: () { /* Arama fonksiyonu */ },
+        )
+      ],
+      // FlexibleSpaceBar, AppBar'ın esnek alanıdır. Resim buraya konur.
+      flexibleSpace: FlexibleSpaceBar(
+        centerTitle: true,
+        title: Text(salon.saloonName, style: AppFonts.poppinsBold(color: Colors.white, fontSize: 16)),
+        background: Image.network(
+          salon.titlePhotoUrl ?? '',
+          fit: BoxFit.cover,
+          color: Colors.black.withOpacity(0.4), // Resmin üzerine hafif bir karartma efekti
+          colorBlendMode: BlendMode.darken,
+          errorBuilder: (_, __, ___) => Container(color: AppColors.borderColor),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSalonInfoCard(BuildContext context, SaloonModel salon) {
+    final favoritesViewModel = context.watch<FavoritesViewModel>();
+    final bool isFavorite = favoritesViewModel.isSalonFavorite(salon.saloonId);
+    // Bu kart, salonun temel bilgilerini ve aksiyon butonlarını içerir.
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: salon.titlePhotoUrl != null && salon.titlePhotoUrl!.isNotEmpty
-                ? Image.network(
-              salon.titlePhotoUrl!,
-              fit: BoxFit.cover,
-              height: 180,
-              width: double.infinity,
-              errorBuilder: (_, __, ___) => const Center(
-                child: Icon(Icons.broken_image, color: Colors.grey, size: 80),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("⭐️ ${salon.rating.toStringAsFixed(1)}", style: AppFonts.bodyMedium()),
+              Text("📍 5 Km", style: AppFonts.bodyMedium()), // Mesafe dinamik olmalı
+              Text("💬 99+ Yorum", style: AppFonts.bodyMedium()),
+            ],
+          ),
+          const Divider(height: 24, thickness: 1),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _infoIcon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                'Favoriler',
+                    () => favoritesViewModel.toggleFavorite(salon.saloonId, salon: salon),
+                color: isFavorite ? Colors.red.shade400 : AppColors.primaryColor,
               ),
-            )
-                : Image.asset(
-              'assets/map_placeholder.png',
-              fit: BoxFit.cover,
-              height: 180,
-              width: double.infinity,
-            ),
-          ),
-          const SizedBox(height: 15),
-          Text(
-            salon.saloonName,
-            style: AppFonts.poppinsBold(fontSize: 24, color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            salon.saloonAddress ?? 'Adres belirtilmemiş',
-            style: AppFonts.bodyMedium(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            salon.saloonDescription ?? 'Açıklama bulunmuyor.',
-            style: AppFonts.bodySmall(color: AppColors.textSecondary),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
+              _infoIcon(Icons.location_on_outlined, "Konum'a Git", () {}),
+              _infoIcon(Icons.share_outlined, 'Paylaş', () {}),
+            ],
+          )
         ],
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textPrimary),
+  // Info Card içindeki ikonlar için yardımcı metot
+  Widget _infoIcon(IconData icon, String label, VoidCallback onTap, {Color? color}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            Icon(icon, color: color ?? AppColors.primaryColor, size: 24),
+            const SizedBox(height: 4),
+            Text(label, style: AppFonts.bodySmall(color: AppColors.textPrimary)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDiscountBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primaryColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.local_offer, color: AppColors.primaryColor),
+          const SizedBox(width: 12),
+          Text('50% İndirim', style: AppFonts.poppinsBold(color: AppColors.primaryColor)),
+          const SizedBox(width: 4),
+          Text('FREESD Kodu ile', style: AppFonts.bodyMedium(color: AppColors.textPrimary)),
+        ],
+      ),
     );
   }
 
   Widget _buildCalendar(BuildContext context, SalonDetailViewModel viewModel) {
-    final DateTime _ = viewModel.selectedDate ?? DateTime.now();
+    // Tasarımdaki yatay takvim
     final List<DateTime> weekDates = List.generate(7, (i) => DateTime.now().add(Duration(days: i)));
 
-    // Eğer kullanıcı bir tarih seçtiyse, o haftayı göster
-    if (viewModel.selectedDate != null) {
-      final startOfWeek = viewModel.selectedDate!.subtract(Duration(days: viewModel.selectedDate!.weekday - 1));
-      weekDates.clear();
-      weekDates.addAll(List.generate(7, (i) => startOfWeek.add(Duration(days: i))));
-    }
-
-    return Container(
-      height: 90,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+    return SizedBox(
+      height: 70,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: weekDates.length,
         itemBuilder: (context, index) {
           final date = weekDates[index];
-          final isSelected = viewModel.selectedDate?.day == date.day &&
-              viewModel.selectedDate?.month == date.month &&
-              viewModel.selectedDate?.year == date.year;
+          final isSelected = viewModel.selectedDate.day == date.day;
 
           return GestureDetector(
             onTap: () => viewModel.selectNewDate(date),
             child: Container(
-              width: 60,
-              margin: const EdgeInsets.symmetric(horizontal: 5),
+              width: 55,
+              margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primaryColor : AppColors.cardColor,
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: isSelected ? Colors.transparent : AppColors.borderColor),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? Colors.transparent : AppColors.borderColor,
+                ),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    DateFormat('EEE', 'tr_TR').format(date).toUpperCase(),
-                    style: AppFonts.bodyMedium(color: isSelected ? AppColors.textOnPrimary : AppColors.textSecondary),
+                    DateFormat('dd', 'tr_TR').format(date),
+                    style: AppFonts.poppinsBold(
+                      color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary,
+                    ),
                   ),
                   Text(
-                    DateFormat('dd').format(date),
-                    style: AppFonts.poppinsBold(fontSize: 20, color: isSelected ? AppColors.textOnPrimary : AppColors.textPrimary),
+                    DateFormat('MMM', 'tr_TR').format(date),
+                    style: AppFonts.bodySmall(
+                      color: isSelected ? AppColors.textOnPrimary : AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -299,248 +297,142 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
     );
   }
 
-  Future<void> _selectDateFromPicker(BuildContext context, SalonDetailViewModel viewModel) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: viewModel.selectedDate ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primaryColor,
-              onPrimary: AppColors.textOnPrimary,
-              surface: AppColors.background,
-              onSurface: AppColors.textPrimary,
-            ), dialogTheme: DialogThemeData(backgroundColor: AppColors.background),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      viewModel.selectNewDate(picked);
-    }
-  }
-
-
-  Widget _buildServicesSection(List<ServiceModel> services) {
+  Widget _buildServiceList(BuildContext context, SalonDetailViewModel viewModel, List<ServiceModel> services) {
     if (services.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Text('Bu salona ait hizmet bulunmamaktadır.', style: AppFonts.bodyMedium(color: AppColors.textSecondary)),
+      return Center(
+        child: Text(
+          "Bu kategoride hizmet bulunmuyor.",
+          style: AppFonts.bodyMedium(color: AppColors.textSecondary),
+        ),
       );
     }
-    return SizedBox(
-      height: 120,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        itemCount: services.length,
-        itemBuilder: (context, index) {
-          final service = services[index];
-          return Container(
-            width: 180,
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-                color: AppColors.cardColor,
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: AppColors.borderColor)
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(service.serviceName, style: AppFonts.poppinsBold(fontSize: 15, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                const Spacer(),
-                Text('Süre: ${service.estimatedTime.inMinutes} dk', style: AppFonts.bodySmall(color: AppColors.textSecondary)),
-                // --- HATA DÜZELTMESİ BURADA ---
-                Text(
-                  'Fiyat: ${service.basePrice} TL',
-                  // `fontWeight` parametresi yerine `.copyWith()` metodu kullanıldı.
-                  style: AppFonts.bodyMedium(color: AppColors.primaryColor)
-                      .copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
+    // Hizmet listesi
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120), // Alttaki bar için boşluk
+      itemCount: services.length,
+      itemBuilder: (context, index) {
+        final service = services[index];
+        final isSelected = viewModel.isServiceSelected(service);
 
-  Widget _buildGallerySection() {
-    final List<String> galleryImages = [
-      'assets/map_placeholder.png',
-      'assets/map_placeholder.png',
-      'assets/map_placeholder.png',
-    ];
-    if (galleryImages.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Text('Galeriye henüz resim eklenmemiştir.', style: AppFonts.bodyMedium(color: AppColors.textSecondary)),
-      );
-    }
-    return SizedBox(
-      height: 120,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        itemCount: galleryImages.length,
-        itemBuilder: (context, index) {
-          return Container(
-            width: 120,
-            margin: const EdgeInsets.only(right: 12),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Image.asset(galleryImages[index], fit: BoxFit.cover),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildCustomerReviewsSection(List<CommentModel> allComments) {
-    if (allComments.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-        child: Text('Bu salona ait henüz yorum bulunmamaktadır.', style: AppFonts.bodyMedium(color: AppColors.textSecondary), textAlign: TextAlign.center),
-      );
-    }
-    final commentsToDisplay = allComments.take(2).toList();
-    return Column(
-      children: [
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          itemCount: commentsToDisplay.length,
-          itemBuilder: (context, index) {
-            final comment = commentsToDisplay[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: AppColors.borderColor)),
-              color: AppColors.cardColor,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset('assets/map_placeholder.png', width: 80, height: 80, fit: BoxFit.cover),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Anonim Kullanıcı', style: AppFonts.poppinsBold(fontSize: 14, color: AppColors.textPrimary)),
-                        Row(
-                          children: List.generate(5, (starIndex) {
-                            return Icon(starIndex < comment.rating ? Icons.star : Icons.star_border, color: AppColors.starColor, size: 18);
-                          }),
-                        ),
-                      ],
+                    Text(service.serviceName, style: AppFonts.poppinsBold(fontSize: 15)),
+                    const SizedBox(height: 4),
+                    Text(
+                      '\$${service.basePrice.toStringAsFixed(0)}',
+                      style: AppFonts.bodyMedium(color: AppColors.textSecondary),
                     ),
-                    const SizedBox(height: 8),
-                    Text(comment.commentText, style: AppFonts.bodyMedium(color: AppColors.textSecondary), maxLines: 3, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 8),
-                    Text(DateFormat('dd MMMM yyyy', 'tr_TR').format(comment.createdAt), style: AppFonts.bodySmall(color: AppColors.textSecondary.withValues(alpha: 0.7))),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${service.estimatedTime.inMinutes} Dk',
+                      style: AppFonts.bodySmall(color: AppColors.textSecondary),
+                    ),
                   ],
                 ),
               ),
-            );
-          },
-        ),
-        if (allComments.length > 2)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => AllReviewsScreen(allComments: allComments)));
-                },
+              OutlinedButton(
+                onPressed: () => viewModel.toggleService(service),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primaryColor,
-                  side: const BorderSide(color: AppColors.primaryColor),
+                  foregroundColor: isSelected ? AppColors.textOnPrimary : AppColors.primaryColor,
+                  backgroundColor: isSelected ? AppColors.primaryColor : Colors.transparent,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  side: BorderSide(color: isSelected ? Colors.transparent : AppColors.primaryColor.withOpacity(0.5)),
                 ),
-                child: Text('Tüm Yorumları Gör', style: AppFonts.poppinsBold()),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildAddReviewSection() {
-    final TextEditingController reviewController = TextEditingController();
-    int currentRating = 0;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: BorderSide(color: AppColors.borderColor)),
-        color: AppColors.cardColor,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Puanla ve Yorum Yap', style: AppFonts.poppinsBold(fontSize: 18, color: AppColors.textPrimary)),
-              const SizedBox(height: 15),
-              StatefulBuilder(
-                builder: (BuildContext context, StateSetter setState) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(5, (index) {
-                      return IconButton(
-                        icon: Icon(index < currentRating ? Icons.star : Icons.star_border, color: AppColors.starColor, size: 30),
-                        onPressed: () => setState(() => currentRating = index + 1),
-                      );
-                    }),
-                  );
-                },
-              ),
-              const SizedBox(height: 15),
-              TextField(
-                controller: reviewController,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  hintText: 'Yorumunuzu buraya yazın...',
-                  hintStyle: AppFonts.bodyMedium(color: AppColors.textSecondary.withValues(alpha: 0.6)),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.borderColor)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primaryColor, width: 2)),
-                  filled: true,
-                  fillColor: AppColors.background,
-                ),
-                style: AppFonts.bodyMedium(color: AppColors.textPrimary),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () { /* Yorum gönderme logiği */ },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
-                    foregroundColor: AppColors.textOnPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: Text('Yorumu Gönder', style: AppFonts.poppinsBold(fontSize: 16)),
-                ),
+                child: Text(isSelected ? 'Çıkar' : 'Ekle +'),
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  // Ekranın en altında görünen "Randevu Al" barı
+  Widget _buildBottomActionBar(BuildContext context, SalonDetailViewModel viewModel) {
+    // Sadece servis seçiliyken görünür
+    return Positioned(
+      bottom: 20,
+      left: 20,
+      right: 20,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.primaryColor,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryColor.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            )
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${viewModel.selectedServices.length} hizmet',
+                  style: AppFonts.bodySmall(color: AppColors.textOnPrimary.withOpacity(0.8)),
+                ),
+                Text(
+                  '\$${viewModel.totalPrice.toStringAsFixed(0)}',
+                  style: AppFonts.poppinsBold(color: AppColors.textOnPrimary, fontSize: 20),
+                ),
+              ],
+            ),
+            ElevatedButton(
+              onPressed: () { /* Randevu alımının son adımı (yeni sayfaya yönlendirme vs.) */ },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.textOnPrimary,
+                foregroundColor: AppColors.primaryColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: Text('Randevu Al', style: AppFonts.poppinsBold()),
+            ),
+          ],
         ),
       ),
     );
   }
+}
 
-  void _showAppointmentBookingBottomSheet(BuildContext context, SalonDetailViewModel viewModel) {
-    // ... (Bu fonksiyonun içi renk paletinden bağımsız olduğu için değiştirilmedi)
-    // ÖNEMLİ: Eğer bu fonksiyon içinde de eski renkler kullanılıyorsa,
-    // aynı mantıkla AppColors'daki yeni renklerle güncellenmelidir.
+// Sekme başlıklarını sabitlemek için yardımcı class
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverAppBarDelegate(this._tabBar);
+  final TabBar _tabBar;
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    // TabBar'ın arkasının transparan olmaması için bir Container ile sarmalıyoruz.
+    return Container(
+      color: AppColors.background,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return false;
   }
 }

@@ -125,14 +125,14 @@ class _MainAppState extends State<MainApp> {
               width: 140,
               margin: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.borderColor.withOpacity(0.5),
+                color: AppColors.borderColor.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 children: [
                   const SizedBox(width: 12),
                   Icon(Icons.search,
-                      color: AppColors.textSecondary.withOpacity(0.7), size: 20),
+                      color: AppColors.textSecondary.withValues(alpha: 0.7), size: 20),
                 ],
               ),
             ),
@@ -196,7 +196,7 @@ class _MainAppState extends State<MainApp> {
         hintStyle: AppFonts.bodyMedium(color: AppColors.textSecondary),
         prefixIcon: const Icon(Icons.search, color: AppColors.iconColor),
         filled: true,
-        fillColor: AppColors.borderColor.withOpacity(0.5),
+        fillColor: AppColors.borderColor.withValues(alpha: 0.5),
         contentPadding:
         const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
         border: OutlineInputBorder(
@@ -221,7 +221,7 @@ class _MainAppState extends State<MainApp> {
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -253,7 +253,7 @@ class _MainAppState extends State<MainApp> {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
+            color: isSelected ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -274,7 +274,7 @@ class _MainAppState extends State<MainApp> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
+          color: isSelected ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(15),
         ),
         child: Icon(

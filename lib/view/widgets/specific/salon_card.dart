@@ -82,7 +82,7 @@ class SalonCard extends StatelessWidget {
                       top: 8,
                       right: 8,
                       child: Material(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(30),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(30),
@@ -180,7 +180,7 @@ class SalonCard extends StatelessWidget {
       margin: const EdgeInsets.only(right: 8.0),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.primaryColor.withOpacity(0.1),
+        color: AppColors.primaryColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Center(

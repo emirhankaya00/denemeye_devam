@@ -1,8 +1,7 @@
-// lib/viewmodels/appointments_viewmodel.dart
+// lib/view/view_models/appointments_viewmodel.dart
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter/cupertino.dart';
 
 import '../../data/models/reservation_model.dart';
 import '../../data/repositories/reservation_repository.dart';
@@ -27,11 +26,16 @@ class AppointmentsViewModel extends ChangeNotifier {
 
     try {
       _allAppointments = await _repository.getReservationsForUser();
-      // Randevuları tarihe göre sıralayalım (en yeni en üstte)
-      _allAppointments.sort((a, b) => b.reservationDate.compareTo(a.reservationDate));
+      // Tarihe göre sıralama (en yeni en üstte olacak şekilde)
+      _allAppointments.sort((a, b) {
+        final aDateTime = a.reservationDate.add(Duration(hours: int.parse(a.reservationTime.split(':')[0]), minutes: int.parse(a.reservationTime.split(':')[1])));
+        final bDateTime = b.reservationDate.add(Duration(hours: int.parse(b.reservationTime.split(':')[0]), minutes: int.parse(b.reservationTime.split(':')[1])));
+        return bDateTime.compareTo(aDateTime);
+      });
+
     } catch (e) {
-      debugPrint('$e');
-      // Burada kullanıcıya bir hata mesajı göstermek için bir state tutabilirsiniz
+      debugPrint('AppointmentsViewModel Hata: $e');
+      _allAppointments = []; // Hata durumunda listeyi boşalt
     }
 
     _isLoading = false;
@@ -40,17 +44,13 @@ class AppointmentsViewModel extends ChangeNotifier {
 
   Future<void> cancelAppointment(String reservationId) async {
     try {
-      // Repository üzerinden randevu durumunu 'cancelled' olarak güncelle
       await _repository.updateReservationStatus(reservationId, ReservationStatus.cancelled);
-      // Listeyi yerel olarak güncellemek yerine, en güncel veriyi çekmek daha güvenilirdir.
+      // İşlem başarılı olduktan sonra listeyi en güncel haliyle yeniden çek.
       await fetchAppointments();
     } catch (e) {
-      debugPrint('$e');
-      // Hata durumunda kullanıcıya bilgi ver
+      debugPrint('Randevu iptal edilemedi: $e');
+      // Hata durumunda kullanıcıya bilgi vermek için rethrow et.
       rethrow;
     }
   }
-
-// Yeniden randevu alma işlemi genellikle kullanıcıyı salon detay sayfasına yönlendirir.
-// Bu mantık şimdilik UI katmanında kalabilir.
 }

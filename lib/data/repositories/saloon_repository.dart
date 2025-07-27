@@ -69,7 +69,7 @@ class SaloonRepository {
         debugPrint('getFilteredSaloons RPC beklenen formatta bir liste döndürmedi.');
         return [];
       }
-      return (response as List<dynamic>).map((item) => SaloonModel.fromJson(item)).toList();
+      return (response).map((item) => SaloonModel.fromJson(item)).toList();
     } catch (e) {
       debugPrint('getFilteredSaloons Hata: $e');
       return [];
@@ -133,7 +133,7 @@ class SaloonRepository {
       // Eğer kategori ve filtre mantığını birleştirmek istersen, bu da getFilteredSaloons'u kullanabilir.
       final response = await _client.rpc('get_saloons_by_service_names', params: {'p_service_names': serviceNames});
       if (response == null || response is! List) return [];
-      return (response as List<dynamic>).map((saloon) => SaloonModel.fromJson(saloon as Map<String, dynamic>)).toList();
+      return (response).map((saloon) => SaloonModel.fromJson(saloon as Map<String, dynamic>)).toList();
     } catch (e) {
       debugPrint('getSaloonsByServiceNames Hata: $e');
       return [];
