@@ -5,6 +5,7 @@ class ServiceModel {
   final Duration estimatedTime; // interval verisi string formatında tutulur (örnek: "01:30:00")
   final double basePrice;
 
+
   ServiceModel({
     required this.serviceId,
     required this.serviceName,

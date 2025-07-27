@@ -145,8 +145,9 @@ class _DashboardContent extends StatelessWidget {
   );
 
   /// Modal popup
-  void _showFilterPopup(BuildContext context) {
+  void _showFilterPopup(BuildContext context) async {
     final vm = Provider.of<FilterViewModel>(context, listen: false);
+    await vm.loadServicesIfNeeded(); // <-- ekle
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -160,6 +161,7 @@ class _DashboardContent extends StatelessWidget {
       ),
     );
   }
+
 }
 
 /// ─────────────────────────────────────────

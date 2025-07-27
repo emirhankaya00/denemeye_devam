@@ -1,87 +1,95 @@
-import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'package:flutter/foundation.dart';
 import '../../data/models/saloon_model.dart';
 import '../../data/models/service_model.dart';
 import '../../data/repositories/saloon_repository.dart';
+import '../../data/repositories/service_repository.dart';
 
-/// Kullanıcının seçtiği filtreleri tutar
 class FilterOptions {
-  final List<String> selectedServices;
-  final double       minRating;
+  List<String> selectedServices; // serviceName[]
+  double minRating;
 
-  const FilterOptions({
+  FilterOptions({
     this.selectedServices = const [],
-    this.minRating       = 0.0,
+    this.minRating = 0,
   });
 
   FilterOptions copyWith({
     List<String>? selectedServices,
-    double?       minRating,
+    double? minRating,
   }) =>
       FilterOptions(
-        selectedServices: selectedServices ?? this.selectedServices,
-        minRating:       minRating       ?? this.minRating,
+        selectedServices: selectedServices ?? List.of(this.selectedServices),
+        minRating: minRating ?? this.minRating,
       );
 }
 
 class FilterViewModel extends ChangeNotifier {
-  final SaloonRepository _repo =
-  SaloonRepository(Supabase.instance.client);
+  final ServiceRepository _serviceRepo;
+  final SaloonRepository _saloonRepo;
 
-  bool _loading = false;
-  bool get isLoading => _loading;
+  FilterViewModel(this._serviceRepo, this._saloonRepo);
 
-  List<SaloonModel> _all = [];        // tüm salonlar (önbellek)
-  List<SaloonModel> _filtered = [];   // ekranda gösterilecek
-  List<SaloonModel> get filteredSaloons => _filtered;
+  bool isLoading = false;
 
-  List<ServiceModel> _allServices = [];   // popup listesi
-  List<ServiceModel> get allServices => _allServices;
+  // Katalog
+  List<ServiceModel> allServices = [];
 
-  FilterOptions _current = const FilterOptions();
-  FilterOptions get currentFilters => _current;
+  // Sonuçlar
+  List<SaloonModel> filteredSaloons = [];
 
-  // -------------------------------- init
-  FilterViewModel() {
-    _init();
+  // Mevcut ayarlar (Dashboard popup’ı kullanıyor)
+  FilterOptions currentFilters = FilterOptions();
+
+  Future<void> loadServicesIfNeeded() async {
+    if (allServices.isNotEmpty) return;
+    isLoading = true;
+    notifyListeners();
+    try {
+      allServices = await _serviceRepo.getAllServices();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
-  Future<void> _init() async {
-    _loading = true;
+
+
+  /// 🔧 DÜZELTME:
+  /// - Artık serviceName -> serviceId çevirisi YAPMIYORUZ.
+  /// - Senin repo imzana uygun olarak, doğrudan `getFilteredSaloons(options)` çağırıyoruz.
+  Future<void> applyFiltersAndFetchResults(FilterOptions options) async {
+    currentFilters = options;
+    isLoading = true;
     notifyListeners();
 
-    final res = await Future.wait([
-      _repo.getAllSaloons(),
-      _repo.getAllServices(),
-    ]);
+    try {
+      // Servis listesi yüklü değilse yükle (name -> id map için gerekli)
+      if (allServices.isEmpty) {
+        allServices = await _serviceRepo.getAllServices();
+      }
 
-    _all         = res[0] as List<SaloonModel>;
-    _allServices = res[1] as List<ServiceModel>;
+      // serviceName[] --> serviceId[]
+      final nameToId = {
+        for (final s in allServices) s.serviceName: s.serviceId,
+      };
+      final serviceIds = options.selectedServices
+          .map((n) => nameToId[n])
+          .whereType<String>()
+          .toList();
 
-    _loading = false;
-    notifyListeners();
-  }
+      // 🔴 DÜZELTME: mevcut repository metodunu çağır
+      filteredSaloons = await _saloonRepo.filterSaloons(
+        serviceIds: serviceIds,
+        minRating: options.minRating,
+      );
 
-  /// Popup > “Filtrelenen Salonları Gör” tıklandığında çağrılır
-  Future<void> applyFiltersAndFetchResults(FilterOptions opt) async {
-    if (_all.isEmpty) await _init();   // ilk açılış güvenliği
-    _loading = true;
-    _current = opt;
-    notifyListeners();
-
-    final lcNames =
-    opt.selectedServices.map((e) => e.toLowerCase()).toList();
-
-    _filtered = _all.where((salon) {
-      final serviceOK = lcNames.isEmpty ||
-          salon.services.any((s) =>
-              lcNames.contains(s.serviceName.toLowerCase()));
-      final ratingOK  = salon.rating >= opt.minRating;
-      return serviceOK && ratingOK;
-    }).toList();
-
-    _loading = false;
-    notifyListeners();
+      debugPrint('[FilterVM] results: ${filteredSaloons.length}');
+    } catch (e, st) {
+      debugPrint('[FilterVM] applyFiltersAndFetchResults error: $e\n$st');
+      filteredSaloons = [];
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 }
