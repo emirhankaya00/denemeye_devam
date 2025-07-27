@@ -14,7 +14,7 @@ enum ReservationStatus {
   confirmed,
   completed,
   cancelled,
-  noShow
+  noShow, rejected
 }
 
 class ReservationModel {

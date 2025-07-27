@@ -16,6 +16,7 @@ class SalonDetailViewModel extends ChangeNotifier {
   final FavoritesRepository _favoritesRepo =
   FavoritesRepository(Supabase.instance.client);
 
+
   // --- STATE ---
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -122,6 +123,21 @@ class SalonDetailViewModel extends ChangeNotifier {
         service: item,
         quantity: 1, // sabit
       ));
+    }
+    notifyListeners();
+  }
+
+  void preselectByServiceIds(List<String> ids) {
+    final idSet = ids.toSet();
+    for (final cat in _categories) {
+      for (final item in cat.services) {
+        if (idSet.contains(item.serviceId) && !isSelected(item.serviceId)) {
+          _selectedItems.add(SelectedItem(
+            service: item,
+            quantity: 1,
+          ));
+        }
+      }
     }
     notifyListeners();
   }

@@ -3,54 +3,85 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../data/models/reservation_model.dart';
 import '../../data/repositories/reservation_repository.dart';
 
+// Liste ekranı için hafif model
+import '../../data/models/reservation_list_item.dart';
+// Düzenleme talebi/tekrar oluştur için seçili hizmet modeli (gerekirse)
+import '../../data/models/selected_item.dart';
+
 class AppointmentsViewModel extends ChangeNotifier {
-  final ReservationRepository _repository = ReservationRepository(Supabase.instance.client);
+  final ReservationRepository _repository =
+  ReservationRepository(Supabase.instance.client);
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
-  List<ReservationModel> _allAppointments = [];
-  List<ReservationModel> get allAppointments => _allAppointments;
+  /// Tüm randevular (hafif model)
+  List<ReservationListItem> _allAppointments = [];
+  List<ReservationListItem> get allAppointments => _allAppointments;
 
-  // ViewModel oluşturulduğunda verileri çek
   AppointmentsViewModel() {
     fetchAppointments();
   }
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // YÜKLEME
+  // ────────────────────────────────────────────────────────────────────────────
   Future<void> fetchAppointments() async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      _allAppointments = await _repository.getReservationsForUser();
-      // Tarihe göre sıralama (en yeni en üstte olacak şekilde)
-      _allAppointments.sort((a, b) {
-        final aDateTime = a.reservationDate.add(Duration(hours: int.parse(a.reservationTime.split(':')[0]), minutes: int.parse(a.reservationTime.split(':')[1])));
-        final bDateTime = b.reservationDate.add(Duration(hours: int.parse(b.reservationTime.split(':')[0]), minutes: int.parse(b.reservationTime.split(':')[1])));
-        return bDateTime.compareTo(aDateTime);
-      });
+      // Hafif liste uç noktasını kullan
+      _allAppointments = await _repository.getMyReservationsLite();
 
+      // En yeni en üstte
+      _allAppointments.sort((a, b) => b.date.compareTo(a.date));
     } catch (e) {
-      debugPrint('AppointmentsViewModel Hata: $e');
-      _allAppointments = []; // Hata durumunda listeyi boşalt
+      debugPrint('AppointmentsViewModel.fetchAppointments error: $e');
+      _allAppointments = [];
     }
 
     _isLoading = false;
     notifyListeners();
   }
 
-  Future<void> cancelAppointment(String reservationId) async {
+  Future<void> refresh() => fetchAppointments();
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // İPTAL / DÜZENLEME TALEBİ
+  // ────────────────────────────────────────────────────────────────────────────
+
+  /// Sıkı iptal: yalnızca pending/approved (veya SQL tarafında izin verilen) randevuları
+  /// kullanıcı iptali olarak kapatır.
+  Future<bool> cancelAppointmentStrict(String reservationId) async {
     try {
-      await _repository.updateReservationStatus(reservationId, ReservationStatus.cancelled);
-      // İşlem başarılı olduktan sonra listeyi en güncel haliyle yeniden çek.
+      final ok = await _repository.cancelReservation(reservationId);
       await fetchAppointments();
+      return ok;
     } catch (e) {
-      debugPrint('Randevu iptal edilemedi: $e');
-      // Hata durumunda kullanıcıya bilgi vermek için rethrow et.
-      rethrow;
+      debugPrint('cancelAppointmentStrict error: $e');
+      return false;
+    }
+  }
+
+  /// Düzenleme talebi – mevcut satırları siler, verilen items ile yeniden ekler,
+  /// randevuyu "pending"e çeker.
+  Future<bool> requestEdit({
+    required String reservationId,
+    required List<SelectedItem> items,
+  }) async {
+    try {
+      final ok = await _repository.requestEdit(
+        reservationId: reservationId,
+        items: items,
+      );
+      await fetchAppointments();
+      return ok;
+    } catch (e) {
+      debugPrint('requestEdit error: $e');
+      return false;
     }
   }
 }

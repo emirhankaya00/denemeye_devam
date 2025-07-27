@@ -38,13 +38,12 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
-        // ───────────── Repositories (üstte) ─────────────
+        // ───────────── Repositories ─────────────
         Provider<ServiceRepository>(create: (_) => ServiceRepository()),
         Provider<SaloonRepository>(create: (_) => SaloonRepository(supabaseClient)),
         Provider<ReservationRepository>(create: (_) => ReservationRepository(supabaseClient)),
         Provider<FavoritesRepository>(create: (_) => FavoritesRepository(supabaseClient)),
         Provider<CommentRepository>(create: (_) => CommentRepository()),
-        // NOT: Burada ikinci bir SaloonRepository TANIMLAMA. (Duble hatasına yol açar)
 
         // ───────────── Global ViewModels ─────────────
         ChangeNotifierProvider(create: (_) => DashboardViewModel()),
@@ -58,10 +57,8 @@ Future<void> main() async {
             ctx.read<SaloonRepository>(),
           ),
         ),
-
-        // ÖNEMLİ:
-        // SalonDetailViewModel ve CheckoutViewModel route‑scoped (ekran içinde) kurulacak.
-        // Böylece saloonId gibi parametreleri ekranlardan geçebilir ve çakışma yaşamazsın.
+        // NOT: SalonDetailViewModel ve CheckoutViewModel route‑scoped
+        // (ilgili ekranların içinde kurulacak).
       ],
       child: const MyApp(),
     ),

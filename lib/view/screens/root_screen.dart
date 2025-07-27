@@ -5,10 +5,10 @@ import 'package:provider/provider.dart';
 
 // Ekran importları
 import '../../core/theme/app_colors.dart';
+import '../../view/screens/appointments/my_appointments_screen.dart';
 import '../../core/theme/app_fonts.dart';
 import '../view_models/auth_viewmodel.dart';
 import '../view_models/search_viewmodel.dart';
-import 'appointments/appointments_screen.dart';
 import 'auth/home_page.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'favorites/favorites_screen.dart';
@@ -39,7 +39,7 @@ class _MainAppState extends State<MainApp> {
 
   static final List<Widget> _pages = <Widget>[
     const DashboardScreen(),
-    const AppointmentsScreen(),
+    const MyAppointmentsScreen(),
     const SearchScreen(), // Ortadaki ikon artık arama değil ama sayfa hala duruyor.
     const FavoritesScreen(),
     const ProfileScreen(),
