@@ -110,7 +110,7 @@ class CheckoutScreen extends StatelessWidget {
                             style: AppFonts.poppinsBold(color: AppColors.textPrimary),
                           ),
                           subtitle: Text(
-                            '${it.service.estimatedMinutes} Dk • Adet: ${it.quantity}',
+                            '${it.service.estimatedMinutes} Dk',
                             style: AppFonts.bodySmall(color: AppColors.textSecondary),
                           ),
                           trailing: Text(

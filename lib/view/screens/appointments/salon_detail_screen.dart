@@ -465,8 +465,11 @@ class _SalonDetailBody extends StatelessWidget {
   // ────────────────────────────────────────────────────────────────────────────
   // Kategori altı hizmet listesi (SaloonServiceItem)
   // ────────────────────────────────────────────────────────────────────────────
-  Widget _buildCategoryServiceList(BuildContext context,
-      SalonDetailViewModel vm, CategoryWithServices cat) {
+  Widget _buildCategoryServiceList(
+      BuildContext context,
+      SalonDetailViewModel vm,
+      CategoryWithServices cat,
+      ) {
     final services = cat.services;
     if (services.isEmpty) {
       return Center(
@@ -487,94 +490,80 @@ class _SalonDetailBody extends StatelessWidget {
       itemBuilder: (_, index) {
         final item = services[index];
         final selected = vm.isSelected(item.serviceId);
-        final qty = selected
-            ? vm.selectedItems
-            .firstWhere(
-              (e) => e.service.serviceId == item.serviceId,
-        )
-            .quantity
-            : 0;
 
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(.06), blurRadius: 8)
-            ],
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(.06), blurRadius: 8)],
           ),
           child: ListTile(
-            contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             leading: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.asset(
-                'assets/map_placeholder.png',
-                width: 64,
-                height: 64,
-                fit: BoxFit.cover,
-              ),
+              child: Image.asset('assets/map_placeholder.png', width: 64, height: 64, fit: BoxFit.cover),
             ),
-            title: Text(item.serviceName,
-                style: AppFonts.poppinsBold(fontSize: 15)),
+            title: Text(item.serviceName, style: AppFonts.poppinsBold(fontSize: 15)),
             subtitle: Row(
               children: [
                 Text('₺${item.price.toStringAsFixed(0)}',
-                    style: AppFonts.bodyMedium(
-                        color: AppColors.textSecondary)),
+                    style: AppFonts.bodyMedium(color: AppColors.textSecondary)),
                 const SizedBox(width: 12),
-                const Icon(Icons.watch_later_outlined,
-                    size: 16, color: AppColors.textSecondary),
+                const Icon(Icons.watch_later_outlined, size: 16, color: AppColors.textSecondary),
                 const SizedBox(width: 4),
                 Text('${item.estimatedMinutes} Dk',
-                    style: AppFonts.bodySmall(
-                        color: AppColors.textSecondary)),
+                    style: AppFonts.bodySmall(color: AppColors.textSecondary)),
               ],
             ),
-            trailing: selected
-                ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  onPressed: () => vm.decQty(item.serviceId),
-                  icon: const Icon(Icons.remove_circle_outline),
-                ),
-                Text('$qty', style: AppFonts.bodyMedium()),
-                IconButton(
-                  onPressed: () => vm.incQty(item.serviceId),
-                  icon: const Icon(Icons.add_circle_outline),
-                ),
-              ],
-            )
-                : OutlinedButton(
+            trailing: OutlinedButton(
               onPressed: () => vm.toggle(item),
-              child: const Text('Ekle +'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: selected ? AppColors.textOnPrimary : AppColors.primaryColor,
+                backgroundColor: selected ? AppColors.primaryColor : Colors.transparent,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                side: BorderSide(
+                  color: selected ? Colors.transparent : AppColors.primaryColor.withOpacity(0.5),
+                ),
+              ),
+              child: Text(selected ? 'Çıkar' : 'Ekle +'),
             ),
           ),
         );
       },
     );
   }
-
   // (GERİYE UYUMLU) Eski ServiceModel listesi için builder – projede referans varsa kalsın
-  Widget _buildServiceList(BuildContext context, SalonDetailViewModel vm,
-      List<ServiceModel> services) {
+  Widget _buildServiceList(
+      BuildContext context,
+      SalonDetailViewModel vm,
+      List<ServiceModel> services,
+      ) {
     if (services.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.only(bottom: 100),
-          child: Text('Bu kategoride hizmet bulunmuyor.',
-              style: AppFonts.bodyMedium(color: AppColors.textSecondary)),
+          child: Text(
+            'Bu kategoride hizmet bulunmuyor.',
+            style: AppFonts.bodyMedium(color: AppColors.textSecondary),
+          ),
         ),
       );
     }
-
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
       itemCount: services.length,
       itemBuilder: (_, index) {
-        final service = services[index];
-        final isSelected = vm.isServiceSelected(service);
+        final s = services[index];
+
+        // 🔁 ServiceModel → ServiceModelCompat
+        final compat = ServiceModelCompat(
+          serviceId: s.serviceId,
+          serviceName: s.serviceName,
+          basePrice: s.basePrice,
+          estimatedTime: s.estimatedTime,
+        );
+
+        final isSelected = vm.isServiceSelected(compat);
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
@@ -582,41 +571,36 @@ class _SalonDetailBody extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.asset('assets/map_placeholder.png',
-                    width: 80, height: 80, fit: BoxFit.cover),
+                child: Image.asset(
+                  'assets/map_placeholder.png',
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(service.serviceName,
-                        style: AppFonts.poppinsBold(fontSize: 15)),
+                    Text(compat.serviceName, style: AppFonts.poppinsBold(fontSize: 15)),
                     const SizedBox(height: 4),
-                    Text('₺${service.basePrice.toStringAsFixed(0)}',
-                        style: AppFonts.bodyMedium(
-                            color: AppColors.textSecondary)),
+                    Text('₺${compat.basePrice.toStringAsFixed(0)}',
+                        style: AppFonts.bodyMedium(color: AppColors.textSecondary)),
                     const SizedBox(height: 4),
-                    Text('${service.estimatedTime.inMinutes} Dk',
-                        style: AppFonts.bodySmall(
-                            color: AppColors.textSecondary)),
+                    Text('${compat.estimatedTime.inMinutes} Dk',
+                        style: AppFonts.bodySmall(color: AppColors.textSecondary)),
                   ],
                 ),
               ),
               OutlinedButton(
-                onPressed: () => vm.toggleService(service),
+                onPressed: () => vm.toggleService(compat),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: isSelected
-                      ? AppColors.textOnPrimary
-                      : AppColors.primaryColor,
-                  backgroundColor:
-                  isSelected ? AppColors.primaryColor : Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                  foregroundColor: isSelected ? AppColors.textOnPrimary : AppColors.primaryColor,
+                  backgroundColor: isSelected ? AppColors.primaryColor : Colors.transparent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   side: BorderSide(
-                    color: isSelected
-                        ? Colors.transparent
-                        : AppColors.primaryColor.withOpacity(0.5),
+                    color: isSelected ? Colors.transparent : AppColors.primaryColor.withOpacity(0.5),
                   ),
                 ),
                 child: Text(isSelected ? 'Çıkar' : 'Ekle +'),

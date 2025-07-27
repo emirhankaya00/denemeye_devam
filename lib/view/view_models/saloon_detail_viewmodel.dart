@@ -4,38 +4,24 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/models/saloon_model.dart';
-import '../../data/models/service_model.dart';
-import '../../data/repositories/favorites_repository.dart';
-import '../../data/repositories/saloon_repository.dart';
-
-// Yeni modeller (kategorili hizmet + seçim satırı)
-import '../../data/models/category_with_services.dart';
 import '../../data/models/selected_item.dart';
+import '../../data/models/category_with_services.dart';
+import '../../data/repositories/saloon_repository.dart';
+import '../../data/repositories/favorites_repository.dart';
 
 class SalonDetailViewModel extends ChangeNotifier {
-  // ────────────────────────────────────────────────────────────────────────────
-  // Repositories
-  // (DI yapmadığın yerlerde default olarak Supabase.instance.client ile kurulur)
-  // ────────────────────────────────────────────────────────────────────────────
-  final SaloonRepository _saloonRepository;
-  final FavoritesRepository _favoritesRepository;
+  SalonDetailViewModel(this._saloonRepo);
 
-  SalonDetailViewModel(SaloonRepository read, {
-    SaloonRepository? saloonRepository,
-    FavoritesRepository? favoritesRepository,
-  })  : _saloonRepository =
-      saloonRepository ?? SaloonRepository(Supabase.instance.client),
-        _favoritesRepository =
-            favoritesRepository ?? FavoritesRepository(Supabase.instance.client);
+  final SaloonRepository _saloonRepo;
+  final FavoritesRepository _favoritesRepo =
+  FavoritesRepository(Supabase.instance.client);
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // State
-  // ────────────────────────────────────────────────────────────────────────────
-  SaloonModel? _salon;
-  SaloonModel? get salon => _salon;
-
+  // --- STATE ---
   bool _isLoading = true;
   bool get isLoading => _isLoading;
+
+  SaloonModel? _salon;
+  SaloonModel? get salon => _salon;
 
   bool _isFavorite = false;
   bool get isFavorite => _isFavorite;
@@ -43,152 +29,74 @@ class SalonDetailViewModel extends ChangeNotifier {
   DateTime _selectedDate = DateTime.now();
   DateTime get selectedDate => _selectedDate;
 
+  /// Dinamik kategoriler + hizmetler (RPC’den)
+  final List<CategoryWithServices> _categories = [];
+  List<CategoryWithServices> get categories => List.unmodifiable(_categories);
+
+  /// Seçili hizmetler (adet mantığı YOK — her servis 1 kere seçilebilir)
+  final List<SelectedItem> _selectedItems = [];
+  List<SelectedItem> get selectedItems => List.unmodifiable(_selectedItems);
+
   TimeOfDay _selectedTime = const TimeOfDay(hour: 12, minute: 0);
   TimeOfDay get selectedTime => _selectedTime;
 
-  /// Kategoriler ve her kategori altındaki salon hizmetleri
-  List<CategoryWithServices> _categories = [];
-  List<CategoryWithServices> get categories => List.unmodifiable(_categories);
+  // --- COMPUTED ---
+  int get totalCount => _selectedItems.length;
 
-  /// Seçili hizmetler (serviceId -> SelectedItem)
-  final Map<String, SelectedItem> _selected = {};
-
-  /// Toplam adet / fiyat / süre
-  int get totalCount => _selected.values.fold(0, (a, b) => a + b.quantity);
   double get totalPrice =>
-      _selected.values.fold(0.0, (a, b) => a + b.lineTotal);
-  int get totalMinutes =>
-      _selected.values.fold(0, (a, b) => a + b.service.estimatedMinutes);
+      _selectedItems.fold(0.0, (sum, e) => sum + e.lineTotal);
 
-  /// Seçili kalemleri liste olarak almak için
-  List<SelectedItem> get selectedItems => _selected.values.toList();
-
-  // ────────────────────────────────────────────────────────────────────────────
-  // Backward‑compat: Eski ekranların beklediği API (ServiceModel tabanlı)
-  //  - selectedServices (READ-ONLY bir liste; SelectedItem -> ServiceModel map)
-  //  - toggleService(ServiceModel)
-  //  - isServiceSelected(ServiceModel)
-  // ────────────────────────────────────────────────────────────────────────────
-
-  /// Eski kodların okuması için, seçimi ServiceModel listesine yansıtırız.
-  List<ServiceModel> get selectedServices {
-    return _selected.values.map((e) {
-      return ServiceModel(
-        serviceId: e.service.serviceId,
-        serviceName: e.service.serviceName,
-        basePrice: e.service.price,
-        // Tahmini süreyi dakika olarak alıyoruz
-        estimatedTime: Duration(minutes: e.service.estimatedMinutes),
-      );
-    }).toList(growable: false);
-  }
-
-  /// Eski methodu yeni seçim yapısına adapte eder.
-  void toggleService(ServiceModel service) {
-    final item = SaloonServiceItem(
-      serviceId: service.serviceId,
-      serviceName: service.serviceName,
-      price: service.basePrice,
-      estimatedMinutes: service.estimatedTime.inMinutes,
-    );
-    toggle(item);
-  }
-
-  /// Eski methodu yeni seçim yapısına adapte eder.
-  bool isServiceSelected(ServiceModel service) {
-    return _selected.containsKey(service.serviceId);
-  }
-
-  // ────────────────────────────────────────────────────────────────────────────
-  // Data yükleme
-  // ────────────────────────────────────────────────────────────────────────────
+  // --- LOAD ---
   Future<void> fetchSalonDetails(String saloonId) async {
     _isLoading = true;
     notifyListeners();
+
     try {
       final results = await Future.wait([
-        _saloonRepository.getSaloonById(saloonId),
-        _saloonRepository.getSaloonCategoriesWithServices(saloonId), // ✅ burası
+        _saloonRepo.getSaloonById(saloonId),
+        _saloonRepo.getSaloonCategoriesWithServices(saloonId),
       ]);
 
       _salon = results[0] as SaloonModel?;
-      _categories = (results[1] as List<CategoryWithServices>);
+      final cats = results[1] as List<CategoryWithServices>;
+      _categories
+        ..clear()
+        ..addAll(cats);
 
-      // (İsteğe bağlı) debug:
-      // debugPrint('[VM] salon.services=${_salon?.services.length ?? 0}, categories=${_categories.length}');
+      // Favori durumu
+      if (_salon != null) {
+        _isFavorite = await _favoritesRepo.isFavorite(_salon!.saloonId);
+      }
     } catch (e) {
-      debugPrint('SalonDetailViewModel Hata: $e');
+      debugPrint('SalonDetailViewModel.fetchSalonDetails Hata: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
-  // ────────────────────────────────────────────────────────────────────────────
-  // Favori
-  // ────────────────────────────────────────────────────────────────────────────
+
+  // --- FAVORİ ---
   Future<void> toggleFavorite() async {
     if (_salon == null) return;
-
-    final prev = _isFavorite;
-    _isFavorite = !prev;
+    _isFavorite = !_isFavorite;
     notifyListeners();
 
     try {
       if (_isFavorite) {
-        await _favoritesRepository.addFavorite(_salon!.saloonId);
+        await _favoritesRepo.addFavorite(_salon!.saloonId);
       } else {
-        await _favoritesRepository.removeFavorite(_salon!.saloonId);
+        await _favoritesRepo.removeFavorite(_salon!.saloonId);
       }
     } catch (e) {
-      _isFavorite = prev;
+      // geri al
+      _isFavorite = !_isFavorite;
       notifyListeners();
-      debugPrint('Favori işlemi hatası: $e');
     }
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // Seçim yönetimi (yeni)
-  // ────────────────────────────────────────────────────────────────────────────
-  bool isSelected(String serviceId) => _selected.containsKey(serviceId);
-
-  void toggle(SaloonServiceItem item) {
-    if (_selected.containsKey(item.serviceId)) {
-      _selected.remove(item.serviceId);
-    } else {
-      _selected[item.serviceId] =
-          SelectedItem(service: item, quantity: 1);
-    }
-    notifyListeners();
-  }
-
-  void incQty(String serviceId) {
-    final cur = _selected[serviceId];
-    if (cur == null) return;
-    _selected[serviceId] = cur.copyWith(quantity: cur.quantity + 1);
-    notifyListeners();
-  }
-
-  void decQty(String serviceId) {
-    final cur = _selected[serviceId];
-    if (cur == null) return;
-    if (cur.quantity <= 1) {
-      _selected.remove(serviceId);
-    } else {
-      _selected[serviceId] = cur.copyWith(quantity: cur.quantity - 1);
-    }
-    notifyListeners();
-  }
-
-  void clearSelections() {
-    _selected.clear();
-    notifyListeners();
-  }
-
-  // ────────────────────────────────────────────────────────────────────────────
-  // Tarih/Saat seçimi
-  // ────────────────────────────────────────────────────────────────────────────
-  void selectNewDate(DateTime date) {
-    _selectedDate = date;
+  // --- DATE/TIME ---
+  void selectNewDate(DateTime d) {
+    _selectedDate = d;
     notifyListeners();
   }
 
@@ -197,44 +105,62 @@ class SalonDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // Randevu oluşturma (RPC: create_reservation)
-  //  - SQL fonksiyonunun auth.uid() fallback’li sürümünü kullandığını varsayıyorum.
-  //    (Aksi halde userId parametresini gönder)
-  // ────────────────────────────────────────────────────────────────────────────
-  Future<String?> createReservation({
-    String? userId,          // opsiyonel (SQL’de auth.uid() varsa null verilebilir)
-    String? personalId,      // opsiyonel
-  }) async {
-    if (_salon == null) {
-      throw Exception('Salon bilgisi yüklenmedi.');
-    }
-    if (_selected.isEmpty) {
-      throw Exception('Lütfen en az bir hizmet seçin.');
-    }
-
-    final client = Supabase.instance.client;
-
-    final String reservationTime =
-        '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}:00';
-
-    try {
-      final params = <String, dynamic>{
-        'p_user_id'          : userId, // null ise SQL tarafında auth.uid() devreye girer
-        'p_saloon_id'        : _salon!.saloonId,
-        'p_personal_id'      : personalId,
-        'p_reservation_date' : DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day).toIso8601String(),
-        'p_reservation_time' : reservationTime,
-        'p_items'            : selectedItems.map((e) => e.toRpcJson()).toList(),
-      };
-
-      final res = await client.rpc('create_reservation', params: params);
-      // Başarılıysa fonksiyon reservation_id döndürür
-      clearSelections();
-      return res?.toString();
-    } catch (e) {
-      debugPrint('createReservation Hata: $e');
-      rethrow;
-    }
+  // --- SEÇİM MANTIĞI (adet yok) ---
+  bool isSelected(String serviceId) {
+    return _selectedItems.any((e) => e.service.serviceId == serviceId);
   }
+
+  /// YALNIZCA ekle/çıkar. Adet yok → her servis en fazla 1.
+  void toggle(SaloonServiceItem item) {
+    final idx = _selectedItems.indexWhere(
+          (e) => e.service.serviceId == item.serviceId,
+    );
+    if (idx >= 0) {
+      _selectedItems.removeAt(idx);
+    } else {
+      _selectedItems.add(SelectedItem(
+        service: item,
+        quantity: 1, // sabit
+      ));
+    }
+    notifyListeners();
+  }
+
+  /// Eski ServiceModel listesi için uyumluluk (projenizde referans varsa)
+  final List<ServiceModelCompat> _legacySelected = [];
+  bool isServiceSelected(ServiceModelCompat s) =>
+      _legacySelected.any((e) => e.serviceId == s.serviceId);
+
+  void toggleService(ServiceModelCompat s) {
+    final i = _legacySelected.indexWhere((e) => e.serviceId == s.serviceId);
+    if (i >= 0) {
+      _legacySelected.removeAt(i);
+    } else {
+      _legacySelected.add(s);
+    }
+    notifyListeners();
+  }
+
+  // --- TEMİZLE ---
+  void clearSelections() {
+    _selectedItems.clear();
+    _legacySelected.clear();
+    notifyListeners();
+  }
+}
+
+/// Eski ServiceModel yapınıza uyumluluk için küçük bir köprü.
+/// Eğer gerekmiyorsa kaldırabilirsiniz.
+class ServiceModelCompat {
+  final String serviceId;
+  final String serviceName;
+  final double basePrice;
+  final Duration estimatedTime;
+
+  ServiceModelCompat({
+    required this.serviceId,
+    required this.serviceName,
+    required this.basePrice,
+    required this.estimatedTime,
+  });
 }
