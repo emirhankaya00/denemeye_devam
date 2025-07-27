@@ -45,24 +45,28 @@ class SaloonRepository {
   }
 
   /// Filtreleme popup'ındaki veriye göre özel filtre uygular
+  /// Hizmet adına ve minimum puana göre Supabase RPC’sini çağırır
   Future<List<SaloonModel>> getFilteredSaloons(FilterOptions options) async {
     try {
       final response = await _client.rpc(
         'get_filtered_saloons',
         params: {
-          'p_min_rating': options.minRating,
-          'p_service_names': options.selectedServices,
+          // RPC fonksiyonundaki parametre adları
+          'p_service_names': options.selectedServices,   // List<String>
+          'p_min_rating'  : options.minRating,          // double
         },
       );
 
       if (response == null || response is! List) {
-        debugPrint('getFilteredSaloons RPC beklenen formatta değil.');
+        debugPrint('getFilteredSaloons RPC beklenen formatta değil → $response');
         return [];
       }
 
-      return response.map((item) => SaloonModel.fromJson(item)).toList();
-    } catch (e) {
-      debugPrint('getFilteredSaloons Hata: $e');
+      return response
+          .map((item) => SaloonModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e, st) {
+      debugPrint('getFilteredSaloons Hata: $e\n$st');
       return [];
     }
   }

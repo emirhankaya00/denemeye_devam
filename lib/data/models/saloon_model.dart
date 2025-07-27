@@ -15,7 +15,8 @@ class SaloonModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<ServiceModel> services;
-  final double rating; // YENİ: Ortalama puan alanı
+  final double rating;                // ✔️ Ortalama puan
+  final List<double> ratings;         // ✔️ İstersen yorum puanlarını sakla
 
   const SaloonModel({
     required this.saloonId,
@@ -30,35 +31,62 @@ class SaloonModel {
     required this.createdAt,
     required this.updatedAt,
     this.services = const [],
-    this.rating = 0.0, // Varsayılan değer
+    this.rating = 0.0,
+    this.ratings = const [],
   });
 
   factory SaloonModel.fromJson(Map<String, dynamic> json) {
-    // ... (Hizmet listesini ayrıştıran kod aynı kalıyor)
-    final List<ServiceModel> serviceList;
-    if (json['services'] != null && json['services'] is List) {
-      serviceList = (json['services'] as List).map((serviceJson) => ServiceModel.fromJson(serviceJson as Map<String, dynamic>)).toList();
-    } else if (json['saloon_services'] != null && json['saloon_services'] is List) {
-      serviceList = (json['saloon_services'] as List).map((s) => ServiceModel.fromJson(s['services'])).whereType<ServiceModel>().toList();
-    } else {
-      serviceList = const [];
+    /* ---- Hizmet listesi aynen bırakıldı ---- */
+    List<ServiceModel> serviceList = [];
+    if (json['services'] is List) {
+      serviceList = (json['services'] as List)
+          .map((e) => ServiceModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else if (json['saloon_services'] is List) {
+      serviceList = (json['saloon_services'] as List)
+          .map((e) => e['services'] != null
+          ? ServiceModel.fromJson(e['services'] as Map<String, dynamic>)
+          : null)
+          .whereType<ServiceModel>()
+          .toList();
     }
+
+    /* ---- YENİ: yorum puanlarını topla ---- */
+    List<double> ratings = [];
+    if (json['comments'] is List) {
+      ratings = (json['comments'] as List)
+          .map((c) => (c as Map<String, dynamic>)['rating'])
+          .whereType<num>()
+          .map((n) => n.toDouble())
+          .toList();
+    }
+
+    // avg_rating SQL’den geliyorsa kullan; yoksa comments dizisinden hesapla
+    double avgRating = json['avg_rating'] != null
+        ? (json['avg_rating'] as num).toDouble()
+        : (ratings.isNotEmpty
+        ? ratings.reduce((a, b) => a + b) / ratings.length
+        : 0.0);
 
     return SaloonModel(
       saloonId: json['saloon_id'] as String? ?? '',
       titlePhotoUrl: json['title_photo_url'] as String?,
       saloonName: json['saloon_name'] as String? ?? 'İsimsiz Salon',
-      saloonDescription: json['saloon_description'] as String? ?? json['description'] as String?,
-      saloonAddress: json['saloon_address'] as String? ?? json['address'] as String?,
+      saloonDescription: json['saloon_description'] as String? ??
+          json['description'] as String?,
+      saloonAddress:
+      json['saloon_address'] as String? ?? json['address'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       phoneNumber: json['phone_number'] as String?,
       email: json['email'] as String?,
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
+      createdAt:
+      DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      updatedAt:
+      DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
       services: serviceList,
-      // YENİ: SQL'de hesaplanan ortalama puanı okuyoruz.
-      rating: (json['avg_rating'] as num?)?.toDouble() ?? 0.0,
+      rating: avgRating,
+      ratings: ratings,
     );
   }
 }
