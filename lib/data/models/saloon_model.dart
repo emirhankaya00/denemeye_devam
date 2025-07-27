@@ -1,3 +1,4 @@
+// lib/data/models/saloon_model.dart
 import 'package:flutter/foundation.dart';
 import 'service_model.dart';
 
@@ -14,9 +15,18 @@ class SaloonModel {
   final String? email;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// Bu salona ait servisler (UI’de etiketler/listeler için)
   final List<ServiceModel> services;
-  final double rating;        // Ortalama puan (yoksa 0.0)
-  final List<double> ratings; // Yorumlardan tekil puanlar
+
+  /// Ortalama puan (SQL’den geliyorsa onu kullanır; yoksa comments içinden hesaplar)
+  final double rating;
+
+  /// Tekil yorum puanları (comments[].rating)
+  final List<double> ratings;
+
+  /// Yorum sayısı (RPC/SQL’den `comment_count` döndürülürse dolar; yoksa comments.length)
+  final int commentCount;
 
   const SaloonModel({
     required this.saloonId,
@@ -33,10 +43,11 @@ class SaloonModel {
     this.services = const [],
     this.rating = 0.0,
     this.ratings = const [],
+    this.commentCount = 0,
   });
 
   // -----------------------------
-  // JSON helpers
+  // Helpers
   // -----------------------------
   static String _asString(dynamic v) => v == null ? '' : v.toString();
 
@@ -48,6 +59,15 @@ class SaloonModel {
     return double.tryParse(s);
   }
 
+  static int _asInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    final s = v.toString().trim();
+    if (s.isEmpty) return 0;
+    return int.tryParse(s) ?? 0;
+  }
+
   static DateTime _asDateTime(dynamic v) {
     if (v == null) return DateTime.now();
     if (v is DateTime) return v;
@@ -56,19 +76,21 @@ class SaloonModel {
     return DateTime.tryParse(s) ?? DateTime.now();
   }
 
-  /// Hem snake_case hem camelCase alan adlarını destekler.
+  // -----------------------------
+  // fromJson
+  // -----------------------------
+  /// Hem snake_case hem camelCase anahtarları desteklenir.
   factory SaloonModel.fromJson(Map<String, dynamic> json) {
-    // --- ID / temel alanlar ---
-    final id = _asString(json['saloon_id'] ?? json['saloonId'] ?? json['id']);
-    final name = _asString(json['saloon_name'] ?? json['saloonName'] ?? json['name']);
-    final desc = json['saloon_description'] ?? json['saloonDescription'] ?? json['description'];
-    final addr = json['saloon_address'] ?? json['saloonAddress'] ?? json['address'];
+    // --- Temel alanlar ---
+    final id    = _asString(json['saloon_id'] ?? json['saloonId'] ?? json['id']);
+    final name  = _asString(json['saloon_name'] ?? json['saloonName'] ?? json['name']);
+    final desc  = json['saloon_description'] ?? json['saloonDescription'] ?? json['description'];
+    final addr  = json['saloon_address'] ?? json['saloonAddress'] ?? json['address'];
     final photo = json['title_photo_url'] ?? json['titlePhotoUrl'];
     final phone = json['phone_number'] ?? json['phoneNumber'];
 
-    final lat = _asDouble(json['latitude']);
-    final lng = _asDouble(json['longitude']);
-
+    final lat     = _asDouble(json['latitude']);
+    final lng     = _asDouble(json['longitude']);
     final created = _asDateTime(json['created_at'] ?? json['createdAt']);
     final updated = _asDateTime(json['updated_at'] ?? json['updatedAt']);
 
@@ -82,17 +104,16 @@ class SaloonModel {
           if (item['services'] is Map<String, dynamic>) {
             serviceList.add(ServiceModel.fromJson(item['services'] as Map<String, dynamic>));
           } else {
-            // 2) { service_id, service_name, ... } doğrudan servis satırı olabilir
+            // 2) Doğrudan servis satırı olabilir
             serviceList.add(ServiceModel.fromJson(item));
           }
         }
       }
     }
 
-    // --- Rating doğrudan / ortalama ---
+    // --- Yorum puanları + ortalama ---
     double? avg = _asDouble(json['rating'] ?? json['avg_rating'] ?? json['average_rating']);
 
-    // Yorumlardan tekil puanlar (varsa)
     final List<double> ratingList = [];
     if (json['comments'] is List) {
       for (final c in (json['comments'] as List)) {
@@ -102,10 +123,21 @@ class SaloonModel {
         }
       }
     }
-    // Ortalama yoksa yorumlardan hesapla
     avg ??= ratingList.isNotEmpty
         ? ratingList.reduce((a, b) => a + b) / ratingList.length
         : 0.0;
+
+    // --- Yorum sayısı ---
+    int cCount = _asInt(
+      json['comment_count'] ??
+          json['comments_count'] ??
+          json['commentsCount'] ??
+          json['commentCount'],
+    );
+    // comment_count yoksa comments dizisinin uzunluğunu kullan
+    if (cCount == 0 && json['comments'] is List) {
+      cCount = (json['comments'] as List).length;
+    }
 
     return SaloonModel(
       saloonId: id,
@@ -122,9 +154,13 @@ class SaloonModel {
       services: serviceList,
       rating: avg,
       ratings: ratingList,
+      commentCount: cCount,
     );
   }
 
+  // -----------------------------
+  // toJson
+  // -----------------------------
   Map<String, dynamic> toJson() => {
     'saloon_id': saloonId,
     'title_photo_url': titlePhotoUrl,
@@ -137,11 +173,15 @@ class SaloonModel {
     'email': email,
     'created_at': createdAt.toIso8601String(),
     'updated_at': updatedAt.toIso8601String(),
-    // Not: services genelde ayrı tabloda; burada yalnızca özet yazmak istersen map’leyebilirsin.
     'rating': rating,
     'ratings': ratings,
+    'comment_count': commentCount,
+    // 'services' genelde ilişki tablosundan gelir; burada serileştirmiyoruz.
   };
 
+  // -----------------------------
+  // copyWith
+  // -----------------------------
   SaloonModel copyWith({
     String? saloonId,
     String? titlePhotoUrl,
@@ -157,6 +197,7 @@ class SaloonModel {
     List<ServiceModel>? services,
     double? rating,
     List<double>? ratings,
+    int? commentCount,
   }) {
     return SaloonModel(
       saloonId: saloonId ?? this.saloonId,
@@ -173,12 +214,16 @@ class SaloonModel {
       services: services ?? this.services,
       rating: rating ?? this.rating,
       ratings: ratings ?? this.ratings,
+      commentCount: commentCount ?? this.commentCount,
     );
   }
 
+  // -----------------------------
+  // Equality / debug
+  // -----------------------------
   @override
   String toString() =>
-      'SaloonModel(id:$saloonId, name:$saloonName, rating:$rating, services:${services.length})';
+      'SaloonModel(id:$saloonId, name:$saloonName, rating:$rating, comments:$commentCount, services:${services.length})';
 
   @override
   bool operator ==(Object other) =>

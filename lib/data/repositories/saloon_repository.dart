@@ -1,3 +1,5 @@
+// lib/data/repositories/saloon_repository.dart
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -9,6 +11,7 @@ class SaloonRepository {
   final SupabaseClient _client;
   SaloonRepository(this._client);
 
+  // UUID doğrulama (boş / hatalı id ile sorguyu atlamak için)
   static final RegExp _uuidRegExp = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
   );
@@ -59,14 +62,14 @@ class SaloonRepository {
     )
   ''';
 
-  /// Genel SELECT yardımcı fonksiyonu
+  /// Ortak SELECT yardımcı fonksiyonu
   Future<List<SaloonModel>> _fetchSaloons(String selectQuery) async {
     try {
       final data = await _client.from('saloons').select(selectQuery);
       if (data is! List) return [];
       return data
           .cast<Map<String, dynamic>>()
-          .map((item) => SaloonModel.fromJson(item))
+          .map(SaloonModel.fromJson)
           .toList();
     } catch (e) {
       debugPrint('Supabase salon sorgu hatası ($selectQuery): $e');
@@ -83,7 +86,7 @@ class SaloonRepository {
     try {
       final res = await _client
           .from('saloons')
-          .select(_saloonDetailSelect) // senin son sürümünde tanımlı
+          .select(_saloonDetailSelect)
           .eq('saloon_id', salonId)
           .single();
 
@@ -95,9 +98,25 @@ class SaloonRepository {
     }
   }
 
-  /// Tüm salonları getirir
+  /// Tüm salonları getirir (liste seçimiyle)
   Future<List<SaloonModel>> getAllSaloons() {
     debugPrint('Tüm salonlar yükleniyor...');
+    return _fetchSaloons(_saloonListSelect);
+  }
+
+  /// Yakınlardaki salonlar (şimdilik aynı seçim; konum filtrelemesi VM tarafında yapılabilir)
+  Future<List<SaloonModel>> getNearbySaloons() {
+    return _fetchSaloons(_saloonListSelect);
+  }
+
+  /// En yüksek puanlı salonlar (listeyi aldıktan sonra VM’de sıralayabilirsin
+  /// ya da SQL tarafında view ile sıralı döndürebilirsin)
+  Future<List<SaloonModel>> getTopRatedSaloons() {
+    return _fetchSaloons(_saloonListSelect);
+  }
+
+  /// Kampanyalı salonlar (kampanya alanı eklenirse burada filtrelenir)
+  Future<List<SaloonModel>> getCampaignSaloons() {
     return _fetchSaloons(_saloonListSelect);
   }
 
@@ -108,7 +127,7 @@ class SaloonRepository {
       if (data is! List) return [];
       return data
           .cast<Map<String, dynamic>>()
-          .map((service) => ServiceModel.fromJson(service))
+          .map(ServiceModel.fromJson)
           .toList();
     } catch (e) {
       debugPrint('getAllServices Hata: $e');
@@ -130,27 +149,12 @@ class SaloonRepository {
       if (res is! List) return [];
       return res
           .cast<Map<String, dynamic>>()
-          .map((e) => SaloonModel.fromJson(e))
+          .map(SaloonModel.fromJson)
           .toList();
     } catch (e) {
       debugPrint('filterSaloons Hata: $e');
       return [];
     }
-  }
-
-  /// Yakınlardaki salonlar (şimdilik aynı seçim; konum filtrelemesini VM’de yapabilirsin)
-  Future<List<SaloonModel>> getNearbySaloons() {
-    return _fetchSaloons(_saloonListSelect);
-  }
-
-  /// En yüksek puanlı salonlar (listeyi aldıktan sonra VM’de sırala veya SQL’de view ile getir)
-  Future<List<SaloonModel>> getTopRatedSaloons() {
-    return _fetchSaloons(_saloonListSelect);
-  }
-
-  /// Kampanyalı salonlar (kampanya alanı varsa SQL filtre ekleyebilirsin)
-  Future<List<SaloonModel>> getCampaignSaloons() {
-    return _fetchSaloons(_saloonListSelect);
   }
 
   /// Bir salona ait çalışanları getirir
@@ -164,7 +168,7 @@ class SaloonRepository {
       if (data is! List) return [];
       return data
           .cast<Map<String, dynamic>>()
-          .map((item) => PersonalModel.fromJson(item))
+          .map(PersonalModel.fromJson)
           .toList();
     } catch (e) {
       debugPrint('getEmployeesBySaloon Hata: $e');
@@ -174,17 +178,18 @@ class SaloonRepository {
 
   /// Kategori sayfası: hizmet ad(lar)ına göre salonlar (RPC)
   Future<List<SaloonModel>> getSaloonsByServiceNames(
-      List<String> serviceNames) async {
+      List<String> serviceNames,
+      ) async {
     if (serviceNames.isEmpty) return [];
     try {
       final res = await _client.rpc(
         'get_saloons_by_service_names',
         params: {'p_service_names': serviceNames},
       );
-      if (res == null || res is! List) return [];
+      if (res is! List) return [];
       return res
           .cast<Map<String, dynamic>>()
-          .map((saloon) => SaloonModel.fromJson(saloon))
+          .map(SaloonModel.fromJson)
           .toList();
     } catch (e) {
       debugPrint('getSaloonsByServiceNames Hata: $e');

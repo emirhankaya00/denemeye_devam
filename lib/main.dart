@@ -17,6 +17,8 @@ import 'package:denemeye_devam/view/view_models/filter_viewmodel.dart';
 // Repositories
 import 'package:denemeye_devam/data/repositories/service_repository.dart';
 import 'package:denemeye_devam/data/repositories/saloon_repository.dart';
+import 'package:denemeye_devam/data/repositories/comment_repository.dart';
+// NOT: CommentsViewModel'ı burada global eklemiyoruz; eklemek istersen aşağıda alternatif var.
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,9 +36,10 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
-        // --- Repositories önce ---
+        // --- Repositories ---
         Provider<ServiceRepository>(create: (_) => ServiceRepository()),
         Provider<SaloonRepository>(create: (_) => SaloonRepository(supabaseClient)),
+        Provider<CommentRepository>(create: (_) => CommentRepository()),
 
         // --- ViewModels ---
         ChangeNotifierProvider(create: (_) => DashboardViewModel()),
@@ -50,6 +53,8 @@ Future<void> main() async {
             ctx.read<SaloonRepository>(),
           ),
         ),
+        // !!! CommentsViewModel'ı burada EKLEMEDİK.
+        // CommentsScreen içinde kendi ChangeNotifierProvider'ı ile kurulacak.
       ],
       child: const MyApp(),
     ),
