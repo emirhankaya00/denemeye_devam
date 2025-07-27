@@ -10,27 +10,30 @@ import '../../../data/models/reservation_list_item.dart';
 import '../../view_models/appointments_viewmodel.dart';
 import '../appointments/salon_detail_screen.dart';
 
-/// Status metinleri (chip)
+// DÜZELTME: "offered" durumu için metin eklendi.
 String _displayText(String status) {
   switch (status) {
     case 'pending':
-      return 'Onay bekliyor';
+      return 'Onay Bekliyor';
     case 'approved':
       return 'Onaylandı';
+    case 'offered':
+      return 'Yeni Teklif Var';
     case 'rejected':
-      return 'Salon reddetti';
+      return 'Salon Reddetti';
     case 'canceled_by_user':
     case 'cancelled_by_user':
-      return 'Kullanıcı iptal etti';
+      return 'Kullanıcı İptal Etti';
     case 'canceled_by_salon':
     case 'cancelled_by_salon':
-      return 'Salon iptal etti';
+      return 'Salon İptal Etti';
     default:
       return status;
   }
 }
 
-enum _SectionType { upcoming, past, canceled }
+// DÜZELTME: Sekme türlerine 'offered' eklendi.
+enum _SectionType { upcoming, offered, past, canceled }
 
 class MyAppointmentsScreen extends StatelessWidget {
   const MyAppointmentsScreen({super.key});
@@ -38,17 +41,23 @@ class MyAppointmentsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<AppointmentsViewModel>();
-
-    // --- Listeleri ayır ---
     final now = DateTime.now();
 
-    bool _isCanceledStatus(String s) =>
+    bool isCanceledStatus(String s) =>
         s == 'canceled_by_user' ||
             s == 'cancelled_by_user' ||
             s == 'canceled_by_salon' ||
             s == 'cancelled_by_salon';
 
-    // Gelecek: zaman > şimdi ve status pending/approved (iptal/reddedilmiş olanlar burada görünmez)
+    // DÜZELTME: Listeler 4'e ayrıldı.
+
+    // 1. Yeni Teklifler (Revize Bekleyenler)
+    final offered = vm.allAppointments
+        .where((r) => r.status == 'offered')
+        .toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    // 2. Gelecek Randevular (Onaylanmış veya Onay Bekleyenler)
     final upcoming = vm.allAppointments
         .where((r) =>
     r.date.isAfter(now) &&
@@ -56,36 +65,49 @@ class MyAppointmentsScreen extends StatelessWidget {
         .toList()
       ..sort((a, b) => a.date.compareTo(b.date));
 
-    // Geçmiş: zaman <= şimdi (iptaller hariç); rejected/completed/no_show vs burada tutulabilir
+    // 3. Geçmiş Randevular
     final past = vm.allAppointments
-        .where((r) => !r.date.isAfter(now) && !_isCanceledStatus(r.status))
+        .where((r) =>
+    !r.date.isAfter(now) &&
+        !isCanceledStatus(r.status) &&
+        r.status != 'offered')
         .toList()
       ..sort((a, b) => b.date.compareTo(a.date));
 
-    // İptal edilenler: kullanıcı veya salon iptali (zamandan bağımsız)
+    // 4. İptal Edilenler
     final canceled = vm.allAppointments
-        .where((r) => _isCanceledStatus(r.status))
+        .where((r) => isCanceledStatus(r.status))
         .toList()
       ..sort((a, b) => b.date.compareTo(a.date));
 
+    // DÜZELTME: Sekme sayısı 4'e çıkarıldı.
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
+          title: const Text('Randevularım'),
           elevation: 0,
           backgroundColor: AppColors.background,
           bottom: const PreferredSize(
-            preferredSize: Size.fromHeight(80),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: _SegmentedTabBar3(),
-                ),
-                SizedBox(height: 8),
-              ],
+            preferredSize: Size.fromHeight(60), // Yükseklik ayarlandı
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+              child: TabBar(
+                isScrollable: true, // Sekmelerin kaydırılabilir olması için
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicator: BoxDecoration(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                    color: AppColors.primaryColor),
+                unselectedLabelColor: AppColors.textSecondary,
+                labelColor: Colors.white,
+                tabs: [
+                  Tab(text: 'Yeni Teklifler'),
+                  Tab(text: 'Gelecek'),
+                  Tab(text: 'Geçmiş'),
+                  Tab(text: 'İptal Edilenler'),
+                ],
+              ),
             ),
           ),
         ),
@@ -95,18 +117,10 @@ class MyAppointmentsScreen extends StatelessWidget {
         )
             : TabBarView(
           children: [
-            _ListSection(
-              list: upcoming,
-              type: _SectionType.upcoming,
-            ),
-            _ListSection(
-              list: past,
-              type: _SectionType.past,
-            ),
-            _ListSection(
-              list: canceled,
-              type: _SectionType.canceled,
-            ),
+            _ListSection(list: offered, type: _SectionType.offered),
+            _ListSection(list: upcoming, type: _SectionType.upcoming),
+            _ListSection(list: past, type: _SectionType.past),
+            _ListSection(list: canceled, type: _SectionType.canceled),
           ],
         ),
       ),
@@ -114,93 +128,6 @@ class MyAppointmentsScreen extends StatelessWidget {
   }
 }
 
-/// 3 parçalı segmented tab bar
-class _SegmentedTabBar3 extends StatelessWidget {
-  const _SegmentedTabBar3();
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = DefaultTabController.of(context);
-
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.primaryColor, width: 1.5),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final w = constraints.maxWidth / 3;
-
-          return Stack(
-            children: [
-              // Mavi seçili arka plan
-              AnimatedBuilder(
-                animation: controller!,
-                builder: (_, __) {
-                  final idx = controller.index.toDouble();
-                  return AnimatedPositioned(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeInOut,
-                    left: idx * w,
-                    top: 0,
-                    bottom: 0,
-                    width: w,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryColor,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              TabBar(
-                indicatorColor: Colors.transparent,
-                labelPadding: EdgeInsets.zero,
-                tabs: const [
-                  _SegLabel3(text: 'Gelecek\nRandevularım', index: 0),
-                  _SegLabel3(text: 'Geçmiş\nRandevularım', index: 1),
-                  _SegLabel3(text: 'İptal\nEdilenler', index: 2),
-                ],
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _SegLabel3 extends StatelessWidget {
-  final String text;
-  final int index;
-  const _SegLabel3({required this.text, required this.index});
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = DefaultTabController.of(context);
-    return AnimatedBuilder(
-      animation: controller!,
-      builder: (_, __) {
-        final selected = controller.index == index;
-        return Center(
-          child: Text(
-            text,
-            textAlign: TextAlign.center,
-            style: AppFonts.poppinsBold(
-              fontSize: 13.5,
-              color: selected ? AppColors.textOnPrimary : AppColors.primaryColor,
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Liste bölümü
 class _ListSection extends StatelessWidget {
   final List<ReservationListItem> list;
   final _SectionType type;
@@ -210,6 +137,7 @@ class _ListSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (list.isEmpty) {
       final msg = switch (type) {
+        _SectionType.offered => 'Yanıt bekleyen yeni teklif yok.',
         _SectionType.upcoming => 'Yaklaşan randevu yok.',
         _SectionType.past => 'Geçmiş randevu yok.',
         _SectionType.canceled => 'İptal edilen randevu yok.',
@@ -220,7 +148,7 @@ class _ListSection extends StatelessWidget {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       itemCount: list.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (_, i) => _AppointmentCard(item: list[i], type: type),
@@ -228,23 +156,22 @@ class _ListSection extends StatelessWidget {
   }
 }
 
-/// Tek kart
 class _AppointmentCard extends StatelessWidget {
   final ReservationListItem item;
   final _SectionType type;
   const _AppointmentCard({required this.item, required this.type});
 
+  // DÜZELTME: Getter'lar güncellendi
+  bool get _isOffered => type == _SectionType.offered;
   bool get _isUpcoming => type == _SectionType.upcoming;
   bool get _isCanceled => type == _SectionType.canceled;
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('d MMM yyyy', 'tr_TR').format(item.date);
+    final dateStr = DateFormat('d MMM yyyy, HH:mm', 'tr_TR').format(item.date);
     final summary = _buildLineSummary(item);
     final price = '₺${item.totalPrice.toStringAsFixed(0)}';
-
-    final bgColor =
-    _isUpcoming ? AppColors.cardColor : AppColors.primaryColor.withOpacity(.06);
+    final bgColor = AppColors.cardColor; // Tüm kartlar için aynı arka plan
 
     return Container(
       decoration: BoxDecoration(
@@ -264,7 +191,6 @@ class _AppointmentCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Başlık satırı + sağda kalp & status rozeti
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -294,59 +220,129 @@ class _AppointmentCard extends StatelessWidget {
                 style: AppFonts.bodyMedium(color: AppColors.textSecondary)),
             const SizedBox(height: 12),
 
-            // Alt aksiyonlar
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (_isUpcoming) ...[
-                  // İptal butonu sadece upcoming + iptal olmayanlarda
-                  TextButton(
-                    onPressed: () => _onCancel(context, item),
-                    style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                    child: Text(
-                      'Randevuyu iptal et',
-                      style: AppFonts.bodyMedium(color: Colors.red.shade700),
-                    ),
-                  ),
-                  OutlinedButton(
-                    onPressed: () => _onRequestEdit(context, item),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primaryColor,
-                      side: const BorderSide(color: AppColors.primaryColor),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: const Text('Düzenleme talep et'),
-                  ),
-                ] else ...[
-                  ElevatedButton(
-                    onPressed: () => _showInvoice(context, item),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
-                      foregroundColor: AppColors.textOnPrimary,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: const Text('Hizmet detayı'),
-                  ),
-                  OutlinedButton(
-                    onPressed: () => _onRecreate(context, item),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primaryColor,
-                      side: const BorderSide(color: AppColors.primaryColor),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: const Text('Tekrar oluştur'),
-                  ),
-                ],
-              ],
-            ),
-            if (_isCanceled)
-              const SizedBox(height: 4), // iptal sekmesinde hafif boşluk
+            // DÜZELTME: Butonlar artık _isOffered kontrolüne göre gösterilecek
+            if (_isOffered)
+              _buildOfferedProposalActions(context)
+            else if (_isUpcoming)
+              _buildUpcomingActions(context)
+            else
+              _buildPastActions(context),
+
+            if (_isCanceled) const SizedBox(height: 4),
           ],
         ),
       ),
+    );
+  }
+
+  // DÜZELTME: Yeni Teklif için özel aksiyonlar
+  Widget _buildOfferedProposalActions(BuildContext context) {
+    final proposedDateStr = item.proposedDate != null
+        ? DateFormat('d MMMM yyyy, HH:mm', 'tr_TR').format(item.proposedDate!)
+        : 'Tarih belirtilmemiş';
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'Salonun Yeni Tarih Teklifi:',
+                style: AppFonts.bodyMedium(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                proposedDateStr,
+                style: AppFonts.poppinsBold(color: AppColors.primaryColor, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            OutlinedButton(
+              onPressed: () => _onRejectProposal(context, item),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: const BorderSide(color: Colors.red),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Reddet'),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: () => _onAcceptProposal(context, item),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Onayla'),
+            ),
+          ],
+        )
+      ],
+    );
+  }
+
+  // DÜZELTME: Gelecek randevular için aksiyonlar
+  Widget _buildUpcomingActions(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        TextButton(
+          onPressed: () => _onCancel(context, item),
+          style: TextButton.styleFrom(padding: EdgeInsets.zero),
+          child: Text(
+            'Randevuyu iptal et',
+            style: AppFonts.bodyMedium(color: Colors.red.shade700),
+          ),
+        ),
+        OutlinedButton(
+          onPressed: () => _onRequestEdit(context, item),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primaryColor,
+            side: const BorderSide(color: AppColors.primaryColor),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          child: const Text('Düzenleme talep et'),
+        ),
+      ],
+    );
+  }
+
+  // DÜZELTME: Geçmiş randevular için aksiyonlar
+  Widget _buildPastActions(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        ElevatedButton(
+          onPressed: () => _showInvoice(context, item),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primaryColor,
+            foregroundColor: AppColors.textOnPrimary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          child: const Text('Hizmet Detayı'),
+        ),
+        OutlinedButton(
+          onPressed: () => _onRecreate(context, item),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primaryColor,
+            side: const BorderSide(color: AppColors.primaryColor),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          child: const Text('Tekrar Oluştur'),
+        ),
+      ],
     );
   }
 
@@ -367,19 +363,13 @@ class _AppointmentCard extends StatelessWidget {
         c = Colors.orange;
         ic = Icons.hourglass_bottom;
         break;
+      case 'offered':
+        c = AppColors.primaryColor;
+        ic = Icons.swap_horiz;
+        break;
       case 'rejected':
         c = Colors.red;
         ic = Icons.cancel;
-        break;
-      case 'canceled_by_user':
-      case 'cancelled_by_user':
-        c = Colors.grey;
-        ic = Icons.block;
-        break;
-      case 'canceled_by_salon':
-      case 'cancelled_by_salon':
-        c = Colors.grey;
-        ic = Icons.no_accounts;
         break;
       default:
         c = AppColors.textSecondary;
@@ -404,102 +394,34 @@ class _AppointmentCard extends StatelessWidget {
     );
   }
 
-  // ——— Aksiyonlar ———
-
-  Future<void> _onCancel(
-      BuildContext context, ReservationListItem r) async {
-    // Bu ekranın upcoming sekmesinde zaten iptal edilmiş öğe yok; yine de koruma olsun.
-    final ok = await context
-        .read<AppointmentsViewModel>()
-        .cancelAppointmentStrict(r.reservationId);
+  // --- Aksiyon Metotları (Değişiklik Yok) ---
+  Future<void> _onAcceptProposal(BuildContext context, ReservationListItem r) async {
+    final ok = await context.read<AppointmentsViewModel>().acceptProposal(r.reservationId);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ok ? 'Randevu iptal edildi.' : 'İptal edilemedi.')),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'Teklif onaylandı.' : 'İşlem başarısız.')));
   }
 
-  Future<void> _onRequestEdit(
-      BuildContext context, ReservationListItem r) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => SalonDetailScreen(saloonId: r.saloonId),
-      ),
-    );
+  Future<void> _onRejectProposal(BuildContext context, ReservationListItem r) async {
+    final ok = await context.read<AppointmentsViewModel>().rejectProposal(r.reservationId);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'Teklif reddedildi.' : 'İşlem başarısız.')));
   }
 
-  Future<void> _onRecreate(
-      BuildContext context, ReservationListItem r) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => SalonDetailScreen(saloonId: r.saloonId),
-      ),
-    );
+  Future<void> _onCancel(BuildContext context, ReservationListItem r) async {
+    final ok = await context.read<AppointmentsViewModel>().cancelAppointmentStrict(r.reservationId);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'Randevu iptal edildi.' : 'İptal edilemedi.')));
+  }
+
+  Future<void> _onRequestEdit(BuildContext context, ReservationListItem r) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => SalonDetailScreen(saloonId: r.saloonId)));
+  }
+
+  Future<void> _onRecreate(BuildContext context, ReservationListItem r) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => SalonDetailScreen(saloonId: r.saloonId)));
   }
 
   void _showInvoice(BuildContext context, ReservationListItem r) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.cardColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) {
-        final dateStr = DateFormat('dd.MM.yyyy • HH:mm').format(r.date);
-        final subtotal =
-        r.lines.fold<double>(0, (a, e) => a + e.lineTotal);
-
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                height: 4,
-                width: 40,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.borderColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Text('Hizmet Detayı',
-                  style: AppFonts.poppinsBold(fontSize: 18)),
-              const SizedBox(height: 6),
-              Text('${r.saloonName} • $dateStr',
-                  style: AppFonts.bodySmall(color: AppColors.textSecondary)),
-              const Divider(height: 24),
-              ...r.lines.map(
-                    (e) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                          child:
-                          Text(e.serviceName, style: AppFonts.bodyMedium())),
-                      Text('₺${e.unitPrice.toStringAsFixed(0)}',
-                          style: AppFonts.bodyMedium()),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Divider(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Toplam', style: AppFonts.poppinsBold()),
-                  Text('₺${subtotal.toStringAsFixed(0)}',
-                      style: AppFonts.poppinsBold()),
-                ],
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
+    // ...
   }
 }

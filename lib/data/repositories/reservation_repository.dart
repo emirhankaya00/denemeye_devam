@@ -1,12 +1,10 @@
+// lib/data/repositories/reservation_repository.dart
+
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/reservation_model.dart';
-
-// Lite liste modeli
 import '../models/reservation_list_item.dart';
-// Düzenleme talebi / tekrar oluştur için seçili satırlar
 import '../models/selected_item.dart';
 
 class ReservationRepository {
@@ -16,8 +14,9 @@ class ReservationRepository {
   String? get _userId => _client.auth.currentUser?.id;
 
   // ────────────────────────────────────────────────────────────────────────────
-  // VAR OLAN METOTLAR (dokunmadım)
+  // MEVCUT METOTLAR (DEĞİŞTİRİLMEDİ)
   // ────────────────────────────────────────────────────────────────────────────
+
   Future<void> createReservation(ReservationModel reservation) async {
     try {
       final reservationData = reservation.toJson()..remove('reservation_id');
@@ -30,7 +29,6 @@ class ReservationRepository {
 
   Future<List<ReservationModel>> getReservationsForUser() async {
     if (_userId == null) return [];
-
     try {
       final data = await _client
           .from('reservations')
@@ -69,13 +67,12 @@ class ReservationRepository {
   }
 
   // ────────────────────────────────────────────────────────────────────────────
-  // LİSTE / İPTAL / DÜZENLEME TALEBİ
+  // KULLANICI AKSİYONLARI (LİSTE, İPTAL, DÜZENLEME, TEKLİFE YANIT)
   // ────────────────────────────────────────────────────────────────────────────
 
-  /// Liste ekranı için hafif SELECT (Lite)
-  /// DİKKAT: fiyat kolonu reservation_services.service_price_at_res
+  // DÜZELTME: is_revision_request alanı sorguya eklendi.
   static const String _listSelect = '''
-    reservation_id, saloon_id, reservation_date, reservation_time, status, total_price,
+    reservation_id, saloon_id, reservation_date, reservation_time, status, total_price, proposed_date, is_revision_request,
     saloons(saloon_name, title_photo_url),
     reservation_services(
       quantity,
@@ -84,13 +81,11 @@ class ReservationRepository {
     )
   ''';
 
-  /// Kullanıcının randevularını hafif modelle döndürür (UI listeleri için ideal).
   Future<List<ReservationListItem>> getMyReservationsLite() async {
     if (_userId == null) {
       debugPrint('getMyReservationsLite: userId null, boş liste dönüyorum.');
       return [];
     }
-    debugPrint('getMyReservationsLite: _userId = $_userId');
 
     try {
       final data = await _client
@@ -111,9 +106,7 @@ class ReservationRepository {
     }
   }
 
-  /// Pending/Approved durumdaki bir randevuyu kullanıcı iptal eder.
   Future<bool> cancelReservation(String reservationId) async {
-
     if (_userId == null) return false;
     try {
       final res = await _client
@@ -123,8 +116,7 @@ class ReservationRepository {
         'updated_at': DateTime.now().toIso8601String(),
       })
           .eq('reservation_id', reservationId)
-          .eq('user_id', _userId!) // !: yukarıda null check var
-      // Supabase Dart için "in_" yerine "filter" ile IN kullanımı:
+          .eq('user_id', _userId!)
           .filter('status', 'in', ['pending', 'approved'])
           .select('reservation_id')
           .maybeSingle();
@@ -138,10 +130,9 @@ class ReservationRepository {
 
   /// Düzenleme talebi:
   /// 1) Eski reservation_services satırlarını siler
-  /// 2) Yeni seçilen servisleri (qty=1) ekler
+  /// 2) Yeni seçilen servisleri ekler
   /// 3) reservations.status → 'pending'
-  ///
-  /// Not: İdealde transaction/RPC ile yapılır; burada adım adım uyguluyoruz.
+  /// 4) reservations.is_revision_request → true (DÜZELTME)
   Future<bool> requestEdit({
     required String reservationId,
     required List<SelectedItem> items,
@@ -149,19 +140,19 @@ class ReservationRepository {
     if (_userId == null) return false;
 
     try {
-      // 1) mevcut satırları sil
+      // 1) Mevcut hizmet satırlarını sil
       await _client
           .from('reservation_services')
           .delete()
           .eq('reservation_id', reservationId);
 
-      // 2) yeni satırları ekle (qty=1, service_price_at_res := item.service.price)
+      // 2) Yeni hizmet satırlarını oluştur ve ekle
       final rows = items.map((e) {
-        final linePrice = e.service.price; // SelectedItem.service.price
+        final linePrice = e.service.price;
         return {
-          'reservation_id'      : reservationId,
-          'service_id'          : e.service.serviceId,
-          'quantity'            : 1,
+          'reservation_id': reservationId,
+          'service_id': e.service.serviceId,
+          'quantity': 1,
           'service_price_at_res': linePrice,
         };
       }).toList();
@@ -170,20 +161,34 @@ class ReservationRepository {
         await _client.from('reservation_services').insert(rows);
       }
 
-      // 3) status → pending
-      await _client
-          .from('reservations')
-          .update({
+      // 3) Ana randevu kaydını "revize talebi" olarak güncelle
+      await _client.from('reservations').update({
         'status': 'pending',
+        'is_revision_request': true, // DÜZELTME: Bu talebin bir revizyon olduğunu işaretle
         'updated_at': DateTime.now().toIso8601String(),
-      })
-          .eq('reservation_id', reservationId)
-          .eq('user_id', _userId!);
+      }).eq('reservation_id', reservationId).eq('user_id', _userId!);
 
       return true;
     } catch (e) {
       debugPrint('requestEdit error: $e');
       return false;
+    }
+  }
+
+  /// Kullanıcının, salonun yeni tarih teklifine yanıt vermesini sağlar.
+  /// Supabase'deki 'respond_to_reservation_offer' RPC fonksiyonunu çağırır.
+  Future<void> respondToOffer(String reservationId, {required bool accept}) async {
+    if (_userId == null) {
+      throw Exception("Kullanıcı girişi yapılmamış.");
+    }
+    try {
+      await _client.rpc('respond_to_reservation_offer', params: {
+        'p_reservation_id': reservationId,
+        'p_accepted': accept,
+      });
+    } catch (e) {
+      debugPrint("respondToOffer repository hatası: $e");
+      throw Exception("Teklife yanıt verilirken bir veritabanı hatası oluştu.");
     }
   }
 }

@@ -7,18 +7,11 @@ class ReservationListItem {
   final String saloonId;
   final String saloonName;
   final String? saloonPhoto;
-
-  /// Tarih + saat birleşik
-  final DateTime date;
-
-  /// pending / approved / rejected / canceled_by_user ...
-  final String status;
-
-  /// reservations.total_price (toplam)
+  final DateTime date; // Tarih + saat birleşik
+  final String status; // pending / approved / offered ...
   final double totalPrice;
-
-  /// Satırlar (reservation_services + services join)
   final List<ReservationServiceLine> lines;
+  final DateTime? proposedDate; // Salondan gelen yeni tarih teklifi
 
   bool get isUpcoming => date.isAfter(DateTime.now());
 
@@ -31,51 +24,61 @@ class ReservationListItem {
     required this.status,
     required this.totalPrice,
     required this.lines,
+    this.proposedDate,
   });
 
   factory ReservationListItem.fromJson(Map<String, dynamic> json) {
-    // ── Tarih+Saat ─────────────────────────────────────────────────────────────
-    final rawDate = json['reservation_date'];
-    final rawTime = json['reservation_time'];
-
+    // --- Yardımcı Fonksiyon (Tarih ve Saati Birleştirmek İçin) ---
     DateTime _combine(DateTime d, String t) {
       var h = 0, m = 0, s = 0;
-      final p = (t).toString().split(':');
+      final p = t.toString().split(':');
       if (p.isNotEmpty) h = int.tryParse(p[0]) ?? 0;
       if (p.length >= 2) m = int.tryParse(p[1]) ?? 0;
       if (p.length >= 3) s = int.tryParse(p[2]) ?? 0;
       return DateTime(d.year, d.month, d.day, h, m, s);
     }
 
+    // --- Alanları Ayrıştırma (Parsing) ---
+
+    // 1. Orijinal Randevu Tarihi
+    final rawDate = json['reservation_date'];
+    final rawTime = json['reservation_time'];
     DateTime dt;
     if (rawDate is DateTime) {
       dt = (rawTime is String && rawTime.isNotEmpty)
           ? _combine(rawDate, rawTime)
           : rawDate;
     } else {
-      final dStr = (rawDate ?? '').toString().split('T').first; // YYYY-MM-DD
-      final tStr = (rawTime ?? '').toString(); // HH:MM[:SS]
+      final dStr = (rawDate ?? '').toString().split('T').first;
+      final tStr = (rawTime ?? '').toString();
       dt = DateTime.tryParse('${dStr}T$tStr') ??
           DateTime.tryParse('$dStr $tStr') ??
           DateTime.tryParse((rawDate ?? '').toString()) ??
           DateTime.now();
     }
 
-    // ── Salon bilgisi (join: saloons(*)) ──────────────────────────────────────
+    // 2. Salon Bilgisi
     final salon = json['saloons'] as Map<String, dynamic>?;
 
-    // ── Satırlar (join: reservation_services(*, services(*))) ─────────────────
+    // 3. Hizmet Satırları
     final lines = (json['reservation_services'] as List? ?? [])
         .whereType<Map<String, dynamic>>()
         .map(ReservationServiceLine.fromJson)
         .toList();
 
-    // ── Toplam fiyat ──────────────────────────────────────────────────────────
+    // 4. Toplam Fiyat
     final totalRaw = json['total_price'];
     final total = (totalRaw is num)
         ? totalRaw.toDouble()
         : double.tryParse(totalRaw?.toString() ?? '') ?? 0.0;
 
+    // 5. Yeni Teklif Tarihi (varsa)
+    final rawProposedDate = json['proposed_date'];
+    final DateTime? proposedDate = rawProposedDate == null
+        ? null
+        : DateTime.tryParse(rawProposedDate.toString());
+
+    // --- Modeli Oluşturup Geri Döndürme ---
     return ReservationListItem(
       reservationId: json['reservation_id'].toString(),
       saloonId: json['saloon_id'].toString(),
@@ -85,6 +88,7 @@ class ReservationListItem {
       status: (json['status'] ?? 'pending').toString(),
       totalPrice: total,
       lines: lines,
+      proposedDate: proposedDate, // Düzeltilmiş ve doğru yere eklenmiş alan
     );
   }
 }
@@ -93,13 +97,8 @@ class ReservationListItem {
 class ReservationServiceLine {
   final String serviceId;
   final String serviceName;
-
-  /// Dakika cinsinden tahmini süre
   final int estimatedMinutes;
-
   final int quantity;
-
-  /// Satır birim fiyatı (reservation_services.service_price_at_res)
   final double unitPrice;
 
   double get lineTotal => unitPrice * quantity;
@@ -115,12 +114,11 @@ class ReservationServiceLine {
   factory ReservationServiceLine.fromJson(Map<String, dynamic> json) {
     final svc = json['services'] as Map<String, dynamic>?;
 
-    // Süre: services.estimated_time (interval: "HH:MM:SS") veya estimated_minutes (int)
     int _parseEstimatedMinutes(dynamic v) {
       if (v == null) return 0;
       if (v is num) return v.toInt();
       final s = v.toString();
-      final parts = s.split(':'); // "HH:MM:SS" / "MM:SS"
+      final parts = s.split(':');
       if (parts.length >= 2) {
         final h = int.tryParse(parts[0]) ?? 0;
         final m = int.tryParse(parts[1]) ?? 0;
@@ -129,15 +127,12 @@ class ReservationServiceLine {
       return int.tryParse(s) ?? 0;
     }
 
-    // Fiyat: repository’de alias kullandıysan (unit_price:service_price_at_res) direkt unit_price gelir.
-    // Yine de fallback koyalım.
     double _parsePrice(Map<String, dynamic> j) {
       final raw = j['unit_price'] ?? j['service_price_at_res'] ?? j['price'] ?? 0;
       if (raw is num) return raw.toDouble();
       return double.tryParse(raw.toString()) ?? 0.0;
     }
 
-    // Adet
     int _parseQty(dynamic v) {
       if (v is num) return v.toInt();
       return int.tryParse((v ?? '1').toString()) ?? 1;
