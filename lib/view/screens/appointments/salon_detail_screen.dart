@@ -1,3 +1,6 @@
+// lib/view/screens/appointments/salon_detail_screen.dart
+
+import 'package:denemeye_devam/view/screens/appointments/comments_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
@@ -9,7 +12,7 @@ import '../../../data/models/saloon_model.dart';
 import '../../../data/models/service_model.dart';
 import '../../view_models/favorites_viewmodel.dart';
 import '../../view_models/saloon_detail_viewmodel.dart';
-// Diğer importlarınız...
+import '../search/search_screen.dart'; // Import SearchScreen
 
 class SalonDetailScreen extends StatefulWidget {
   final String salonId;
@@ -139,7 +142,13 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> with SingleTicker
       actions: [
         IconButton(
           icon: const Icon(Icons.search, color: Colors.white),
-          onPressed: () { /* Arama fonksiyonu */ },
+          onPressed: () {
+            // Arama sayfasına yönlendirme
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SearchScreen()),
+            );
+          },
         )
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -152,7 +161,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> with SingleTicker
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(color: AppColors.borderColor),
             ),
-            // 2. Katman: Okunabilirliği artırmak için gradient
+            // 2. Katman: Okunabilirlik artırmak için gradient
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -253,7 +262,15 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> with SingleTicker
           ),
           // Sağ taraftaki yorum butonu
           TextButton(
-            onPressed: () { /* Yorumlar sayfasına git */ },
+            onPressed: () {
+              // Yorumlar sayfasına git
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CommentsScreen(salonId: salon.saloonId),
+                ),
+              );
+            },
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
