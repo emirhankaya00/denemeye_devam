@@ -2,7 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/service_model.dart';
 
 class ServiceRepository {
-  final _client = Supabase.instance.client;
+  final SupabaseClient _client;
+  ServiceRepository(this._client);
 
   Future<List<ServiceModel>> getAllServices() async {
     final res = await _client

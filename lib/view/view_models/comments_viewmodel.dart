@@ -1,11 +1,14 @@
-// lib/view/view_models/comments_viewmodel.dart
-
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // DÜZELTME: Supabase'i import etmeliyiz
 import '../../data/models/comment_model.dart';
-import '../../data/repositories/comment_repository.dart'; // Yorum Repository'sini import edin
+import '../../data/repositories/comment_repository.dart';
 
 class CommentsViewModel extends ChangeNotifier {
-  final CommentRepository _commentRepository = CommentRepository();
+  // DÜZELTME: Hatanın olduğu satır.
+  // Artık CommentRepository'yi oluştururken ona Supabase client'ını veriyoruz.
+  final CommentRepository _commentRepository =
+  CommentRepository(Supabase.instance.client);
+
   List<CommentModel> _comments = [];
   bool _isLoading = false;
   String? _errorMessage;
@@ -23,7 +26,7 @@ class CommentsViewModel extends ChangeNotifier {
       _comments = await _commentRepository.getCommentsForSalon(salonId);
     } catch (e) {
       _errorMessage = 'Yorumlar yüklenirken bir hata oluştu: $e';
-      print(_errorMessage); // Hata ayıklama için konsola yazdır
+      debugPrint(_errorMessage); // Hata ayıklama için konsola yazdır
     } finally {
       _isLoading = false;
       notifyListeners();

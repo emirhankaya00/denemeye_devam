@@ -1,3 +1,6 @@
+// lib/main.dart
+
+import 'package:denemeye_devam/view/view_models/saloon_detail_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -7,14 +10,6 @@ import 'package:intl/date_symbol_data_local.dart';
 // Home
 import 'package:denemeye_devam/view/screens/auth/home_page.dart';
 
-// Global ViewModels
-import 'package:denemeye_devam/view/view_models/appointments_viewmodel.dart';
-import 'package:denemeye_devam/view/view_models/auth_viewmodel.dart';
-import 'package:denemeye_devam/view/view_models/dashboard_viewmodel.dart';
-import 'package:denemeye_devam/view/view_models/favorites_viewmodel.dart';
-import 'package:denemeye_devam/view/view_models/search_viewmodel.dart';
-import 'package:denemeye_devam/view/view_models/filter_viewmodel.dart';
-
 // Repositories
 import 'package:denemeye_devam/data/repositories/service_repository.dart';
 import 'package:denemeye_devam/data/repositories/saloon_repository.dart';
@@ -22,10 +17,19 @@ import 'package:denemeye_devam/data/repositories/comment_repository.dart';
 import 'package:denemeye_devam/data/repositories/reservation_repository.dart';
 import 'package:denemeye_devam/data/repositories/favorites_repository.dart';
 
+// Global ViewModels
+import 'package:denemeye_devam/view/view_models/appointments_viewmodel.dart';
+import 'package:denemeye_devam/view/view_models/auth_viewmodel.dart';
+import 'package:denemeye_devam/view/view_models/dashboard_viewmodel.dart';
+import 'package:denemeye_devam/view/view_models/favorites_viewmodel.dart';
+import 'package:denemeye_devam/view/view_models/search_viewmodel.dart';
+import 'package:denemeye_devam/view/view_models/filter_viewmodel.dart';
+import 'package:denemeye_devam/view/view_models/comments_viewmodel.dart';
+// DÜZELTME: Eksik olan import eklendi ve sınıf adı düzeltildi.
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('tr_TR', null);
-
   await dotenv.load(fileName: ".env");
 
   await Supabase.initialize(
@@ -38,12 +42,12 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
-        // ───────────── Repositories ─────────────
-        Provider<ServiceRepository>(create: (_) => ServiceRepository()),
+        // DÜZELTME: Artık TÜM repository'ler aynı, tutarlı şekilde ve hatasız kuruluyor.
         Provider<SaloonRepository>(create: (_) => SaloonRepository(supabaseClient)),
         Provider<ReservationRepository>(create: (_) => ReservationRepository(supabaseClient)),
         Provider<FavoritesRepository>(create: (_) => FavoritesRepository(supabaseClient)),
-        Provider<CommentRepository>(create: (_) => CommentRepository()),
+        Provider<CommentRepository>(create: (_) => CommentRepository(supabaseClient)),
+        Provider<ServiceRepository>(create: (_) => ServiceRepository(supabaseClient)),
 
         // ───────────── Global ViewModels ─────────────
         ChangeNotifierProvider(create: (_) => DashboardViewModel()),
@@ -51,14 +55,18 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => SearchViewModel()),
         ChangeNotifierProvider(create: (_) => AppointmentsViewModel()),
+        ChangeNotifierProvider(create: (_) => CommentsViewModel()),
         ChangeNotifierProvider(
           create: (ctx) => FilterViewModel(
             ctx.read<ServiceRepository>(),
             ctx.read<SaloonRepository>(),
           ),
         ),
-        // NOT: SalonDetailViewModel ve CheckoutViewModel route‑scoped
-        // (ilgili ekranların içinde kurulacak).
+        ChangeNotifierProvider(
+          create: (ctx) => SalonDetailViewModel( // DÜZELTME: Sınıf adı düzeltildi.
+            ctx.read<SaloonRepository>(),
+          ),
+        ),
       ],
       child: const MyApp(),
     ),
@@ -70,7 +78,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Uygulama temeli
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Denemeye Devam',

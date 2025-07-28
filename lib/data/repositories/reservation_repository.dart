@@ -175,6 +175,26 @@ class ReservationRepository {
     }
   }
 
+  Future<bool> canUserComment(String saloonId) async {
+    if (_userId == null) return false;
+
+    try {
+      final response = await _client
+          .from('reservations')
+          .select('reservation_id')
+          .eq('user_id', _userId!)
+          .eq('saloon_id', saloonId)
+          .eq('status', 'completed') // Sadece tamamlanmış randevuları say
+          .limit(1); // Sadece bir tane bulmamız yeterli
+
+      // Eğer en az bir kayıt bulunduysa, liste boş olmayacaktır.
+      return response.isNotEmpty;
+    } catch (e) {
+      debugPrint('canUserComment hatası: $e');
+      return false; // Hata durumunda yetki yok say
+    }
+  }
+
   /// Kullanıcının, salonun yeni tarih teklifine yanıt vermesini sağlar.
   /// Supabase'deki 'respond_to_reservation_offer' RPC fonksiyonunu çağırır.
   Future<void> respondToOffer(String reservationId, {required bool accept}) async {

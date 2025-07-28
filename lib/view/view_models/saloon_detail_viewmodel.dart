@@ -8,13 +8,19 @@ import '../../data/models/selected_item.dart';
 import '../../data/models/category_with_services.dart';
 import '../../data/repositories/saloon_repository.dart';
 import '../../data/repositories/favorites_repository.dart';
+// DÜZELTME: Yorum ve Rezervasyon repository'leri eklendi
+import '../../data/repositories/comment_repository.dart';
+import '../../data/repositories/reservation_repository.dart';
 
 class SalonDetailViewModel extends ChangeNotifier {
-  SalonDetailViewModel(this._saloonRepo);
-
+  // --- REPOSITORIES ---
   final SaloonRepository _saloonRepo;
-  final FavoritesRepository _favoritesRepo =
-  FavoritesRepository(Supabase.instance.client);
+  final FavoritesRepository _favoritesRepo = FavoritesRepository(Supabase.instance.client);
+  // DÜZELTME: Yeni repository'ler eklendi
+  final CommentRepository _commentRepo = CommentRepository(Supabase.instance.client);
+  final ReservationRepository _reservationRepo = ReservationRepository(Supabase.instance.client);
+
+  SalonDetailViewModel(this._saloonRepo);
 
 
   // --- STATE ---
@@ -27,25 +33,27 @@ class SalonDetailViewModel extends ChangeNotifier {
   bool _isFavorite = false;
   bool get isFavorite => _isFavorite;
 
+  // DÜZELTME: Yorum yapma yetkisi için yeni state
+  bool _canUserComment = false;
+  bool get canUserComment => _canUserComment;
+
   DateTime _selectedDate = DateTime.now();
   DateTime get selectedDate => _selectedDate;
 
-  /// Dinamik kategoriler + hizmetler (RPC’den)
   final List<CategoryWithServices> _categories = [];
   List<CategoryWithServices> get categories => List.unmodifiable(_categories);
 
-  /// Seçili hizmetler (adet mantığı YOK — her servis 1 kere seçilebilir)
   final List<SelectedItem> _selectedItems = [];
   List<SelectedItem> get selectedItems => List.unmodifiable(_selectedItems);
 
   TimeOfDay _selectedTime = const TimeOfDay(hour: 12, minute: 0);
   TimeOfDay get selectedTime => _selectedTime;
 
+
   // --- COMPUTED ---
   int get totalCount => _selectedItems.length;
+  double get totalPrice => _selectedItems.fold(0.0, (sum, e) => sum + e.lineTotal);
 
-  double get totalPrice =>
-      _selectedItems.fold(0.0, (sum, e) => sum + e.lineTotal);
 
   // --- LOAD ---
   Future<void> fetchSalonDetails(String saloonId) async {
@@ -53,9 +61,13 @@ class SalonDetailViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Salon detaylarını, hizmetleri ve favori durumunu aynı anda çek
       final results = await Future.wait([
         _saloonRepo.getSaloonById(saloonId),
         _saloonRepo.getSaloonCategoriesWithServices(saloonId),
+        _favoritesRepo.isFavorite(saloonId),
+        // DÜZELTME: Yorum yapma yetkisini de aynı anda kontrol et
+        _reservationRepo.canUserComment(saloonId),
       ]);
 
       _salon = results[0] as SaloonModel?;
@@ -63,11 +75,9 @@ class SalonDetailViewModel extends ChangeNotifier {
       _categories
         ..clear()
         ..addAll(cats);
+      _isFavorite = results[2] as bool;
+      _canUserComment = results[3] as bool;
 
-      // Favori durumu
-      if (_salon != null) {
-        _isFavorite = await _favoritesRepo.isFavorite(_salon!.saloonId);
-      }
     } catch (e) {
       debugPrint('SalonDetailViewModel.fetchSalonDetails Hata: $e');
     } finally {
@@ -76,7 +86,8 @@ class SalonDetailViewModel extends ChangeNotifier {
     }
   }
 
-  // --- FAVORİ ---
+  // --- ACTIONS ---
+
   Future<void> toggleFavorite() async {
     if (_salon == null) return;
     _isFavorite = !_isFavorite;
@@ -89,9 +100,34 @@ class SalonDetailViewModel extends ChangeNotifier {
         await _favoritesRepo.removeFavorite(_salon!.saloonId);
       }
     } catch (e) {
-      // geri al
       _isFavorite = !_isFavorite;
       notifyListeners();
+    }
+  }
+
+  // DÜZELTME: Yorumu göndermek için yeni fonksiyon
+  /// Kullanıcının yorumunu ve puanını veritabanına kaydeder.
+  Future<bool> submitComment({
+    required int rating,
+    required String commentText,
+  }) async {
+    if (_salon == null) return false;
+
+    try {
+      await _commentRepo.addComment(
+        saloonId: _salon!.saloonId,
+        rating: rating,
+        commentText: commentText,
+      );
+      // Yorum gönderildikten sonra, kullanıcının tekrar yorum yapmasını engellemek için
+      // yetkiyi 'false' yapıyoruz. Sayfa yenilendiğinde gerçek durum tekrar çekilir.
+      _canUserComment = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint("Yorum gönderme hatası: $e");
+      // Arayüzde bir hata mesajı göstermek için bu bilgi kullanılabilir.
+      return false;
     }
   }
 
@@ -106,23 +142,17 @@ class SalonDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- SEÇİM MANTIĞI (adet yok) ---
+  // --- SELECTION LOGIC ---
   bool isSelected(String serviceId) {
     return _selectedItems.any((e) => e.service.serviceId == serviceId);
   }
 
-  /// YALNIZCA ekle/çıkar. Adet yok → her servis en fazla 1.
   void toggle(SaloonServiceItem item) {
-    final idx = _selectedItems.indexWhere(
-          (e) => e.service.serviceId == item.serviceId,
-    );
+    final idx = _selectedItems.indexWhere((e) => e.service.serviceId == item.serviceId);
     if (idx >= 0) {
       _selectedItems.removeAt(idx);
     } else {
-      _selectedItems.add(SelectedItem(
-        service: item,
-        quantity: 1, // sabit
-      ));
+      _selectedItems.add(SelectedItem(service: item, quantity: 1));
     }
     notifyListeners();
   }
@@ -132,51 +162,15 @@ class SalonDetailViewModel extends ChangeNotifier {
     for (final cat in _categories) {
       for (final item in cat.services) {
         if (idSet.contains(item.serviceId) && !isSelected(item.serviceId)) {
-          _selectedItems.add(SelectedItem(
-            service: item,
-            quantity: 1,
-          ));
+          _selectedItems.add(SelectedItem(service: item, quantity: 1));
         }
       }
     }
     notifyListeners();
   }
 
-  /// Eski ServiceModel listesi için uyumluluk (projenizde referans varsa)
-  final List<ServiceModelCompat> _legacySelected = [];
-  bool isServiceSelected(ServiceModelCompat s) =>
-      _legacySelected.any((e) => e.serviceId == s.serviceId);
-
-  void toggleService(ServiceModelCompat s) {
-    final i = _legacySelected.indexWhere((e) => e.serviceId == s.serviceId);
-    if (i >= 0) {
-      _legacySelected.removeAt(i);
-    } else {
-      _legacySelected.add(s);
-    }
-    notifyListeners();
-  }
-
-  // --- TEMİZLE ---
   void clearSelections() {
     _selectedItems.clear();
-    _legacySelected.clear();
     notifyListeners();
   }
-}
-
-/// Eski ServiceModel yapınıza uyumluluk için küçük bir köprü.
-/// Eğer gerekmiyorsa kaldırabilirsiniz.
-class ServiceModelCompat {
-  final String serviceId;
-  final String serviceName;
-  final double basePrice;
-  final Duration estimatedTime;
-
-  ServiceModelCompat({
-    required this.serviceId,
-    required this.serviceName,
-    required this.basePrice,
-    required this.estimatedTime,
-  });
 }

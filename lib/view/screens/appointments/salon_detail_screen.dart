@@ -1,24 +1,16 @@
-// lib/view/screens/appointments/salon_detail_screen.dart
+// KULLANICI UYGULAMASI -> lib/view/screens/appointments/salon_detail_screen.dart
 
-import 'dart:async';
 import 'package:denemeye_devam/view/screens/appointments/comments_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-// Checkout’a yönlendirme için
 import 'package:denemeye_devam/view/screens/appointments/checkout_screen.dart';
-
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_fonts.dart';
 import '../../../data/models/saloon_model.dart';
-import '../../../data/models/service_model.dart';
 import '../../../data/models/category_with_services.dart';
-import '../../../data/repositories/saloon_repository.dart';            // ✅ EKLENDİ (repo okuma için)
-// Eğer VM’in 3 repo isterse şunları da aç:
-/// import '../../../data/repositories/reservation_repository.dart';
-/// import '../../../data/repositories/favorites_repository.dart';
-
+import '../../../data/repositories/saloon_repository.dart';
 import '../../view_models/favorites_viewmodel.dart';
 import '../../view_models/saloon_detail_viewmodel.dart';
 import '../../view_models/comments_viewmodel.dart';
@@ -32,18 +24,8 @@ class SalonDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<SalonDetailViewModel>(
       create: (ctx) =>
-      // ✅ VM kurucusu tek bağımlılık (SaloonRepository) bekliyorsa:
       SalonDetailViewModel(ctx.read<SaloonRepository>())
         ..fetchSalonDetails(saloonId),
-
-      // 🔁 Eğer senin VM imzan: SalonDetailViewModel(SaloonRepository, ReservationRepository, FavoritesRepository)
-      // ise üstteki satır yerine ALTTAKİNİ kullan:
-      // SalonDetailViewModel(
-      //   ctx.read<SaloonRepository>(),
-      //   ctx.read<ReservationRepository>(),
-      //   ctx.read<FavoritesRepository>(),
-      // )..fetchSalonDetails(saloonId),
-
       child: _SalonDetailBody(salonId: saloonId),
     );
   }
@@ -68,27 +50,15 @@ class _SalonDetailBody extends StatelessWidget {
       );
     }
 
-    // Kategoriler yoksa tabsiz gövde
-    if (vm.categories.isEmpty) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        body: Stack(
-          children: [
-            _buildMainContentNoTabs(context, vm),
-            if (vm.totalCount > 0) _buildBottomActionBar(context, vm),
-          ],
-        ),
-      );
-    }
-
     // Kategoriler varsa dinamik tabbar
+    final int tabLength = vm.categories.isNotEmpty ? vm.categories.length : 1;
     return DefaultTabController(
-      length: vm.categories.length,
+      length: tabLength,
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: Stack(
           children: [
-            _buildMainContentWithTabs(context, vm),
+            _buildMainContent(context, vm),
             if (vm.totalCount > 0) _buildBottomActionBar(context, vm),
           ],
         ),
@@ -96,19 +66,39 @@ class _SalonDetailBody extends StatelessWidget {
     );
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // ANA İÇERİK – KATEGORİ YOK
-  // ────────────────────────────────────────────────────────────────────────────
-  Widget _buildMainContentNoTabs(BuildContext context, SalonDetailViewModel vm) {
+  // DÜZELTME: ANA İÇERİK OLUŞTURUCU BİRLEŞTİRİLDİ
+  Widget _buildMainContent(BuildContext context, SalonDetailViewModel vm) {
     final salon = vm.salon!;
+    final tabs = vm.categories.map((c) => Tab(text: c.categoryName)).toList();
+
     return NestedScrollView(
       headerSliverBuilder: (_, __) => [
         _buildSliverAppBar(context, salon),
-        SliverToBoxAdapter(child: _buildActionButtons(context, salon)),
+        SliverToBoxAdapter(child: _buildActionButtons(context, vm)),
         SliverToBoxAdapter(child: _buildDiscountBanner()),
         SliverToBoxAdapter(child: _buildCalendar(context, vm)),
+        if (vm.categories.isNotEmpty)
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _SliverAppBarDelegate(
+              TabBar(
+                labelColor: AppColors.textOnPrimary,
+                unselectedLabelColor: AppColors.textPrimary,
+                indicator: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: AppColors.primaryColor,
+                ),
+                indicatorPadding:
+                const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                isScrollable: true,
+                tabs: tabs,
+              ),
+            ),
+          ),
       ],
-      body: Center(
+      body: vm.categories.isEmpty
+          ? Center(
         child: Padding(
           padding: const EdgeInsets.only(bottom: 100),
           child: Text(
@@ -116,44 +106,8 @@ class _SalonDetailBody extends StatelessWidget {
             style: AppFonts.bodyMedium(color: AppColors.textSecondary),
           ),
         ),
-      ),
-    );
-  }
-
-  // ────────────────────────────────────────────────────────────────────────────
-  // ANA İÇERİK – KATEGORİLİ (dinamik TabBar)
-  // ────────────────────────────────────────────────────────────────────────────
-  Widget _buildMainContentWithTabs(
-      BuildContext context, SalonDetailViewModel vm) {
-    final salon = vm.salon!;
-    final tabs = vm.categories.map((c) => Tab(text: c.categoryName)).toList();
-
-    return NestedScrollView(
-      headerSliverBuilder: (_, __) => [
-        _buildSliverAppBar(context, salon),
-        SliverToBoxAdapter(child: _buildActionButtons(context, salon)),
-        SliverToBoxAdapter(child: _buildDiscountBanner()),
-        SliverToBoxAdapter(child: _buildCalendar(context, vm)),
-        SliverPersistentHeader(
-          pinned: true,
-          delegate: _SliverAppBarDelegate(
-            TabBar(
-              labelColor: AppColors.textOnPrimary,
-              unselectedLabelColor: AppColors.textPrimary,
-              indicator: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: AppColors.primaryColor,
-              ),
-              indicatorPadding:
-              const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              isScrollable: true,
-              tabs: tabs,
-            ),
-          ),
-        ),
-      ],
-      body: TabBarView(
+      )
+          : TabBarView(
         children: vm.categories
             .map((cat) => _buildCategoryServiceList(context, vm, cat))
             .toList(),
@@ -161,9 +115,6 @@ class _SalonDetailBody extends StatelessWidget {
     );
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // SliverAppBar (resim + gradient + başlık)
-  // ────────────────────────────────────────────────────────────────────────────
   Widget _buildSliverAppBar(BuildContext context, SaloonModel salon) {
     return SliverAppBar(
       expandedHeight: 300,
@@ -216,9 +167,6 @@ class _SalonDetailBody extends StatelessWidget {
     );
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // Başlık alanı
-  // ────────────────────────────────────────────────────────────────────────────
   Widget _buildHeaderContent(SaloonModel salon) {
     final serviceTags =
     salon.services.map((s) => s.serviceName).take(3).toList();
@@ -278,10 +226,9 @@ class _SalonDetailBody extends StatelessWidget {
     );
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // Aksiyonlar + Yorumlar butonu
-  // ────────────────────────────────────────────────────────────────────────────
-  Widget _buildActionButtons(BuildContext context, SaloonModel salon) {
+  // DÜZELTME: AKSİYON BUTONLARI ARTIK VIEWMODEL ALIYOR
+  Widget _buildActionButtons(BuildContext context, SalonDetailViewModel vm) {
+    final salon = vm.salon!;
     final favorites = context.watch<FavoritesViewModel>();
     final isFavorite = favorites.isSalonFavorite(salon.saloonId);
 
@@ -293,33 +240,32 @@ class _SalonDetailBody extends StatelessWidget {
           Row(children: [
             _infoIcon(
               isFavorite ? Icons.favorite : Icons.favorite_border,
-              'Favoriler',
+              'Favori',
                   () => favorites.toggleFavorite(salon.saloonId, salon: salon),
-              color:
-              isFavorite ? Colors.red.shade400 : AppColors.textPrimary,
+              color: isFavorite ? Colors.red.shade400 : AppColors.textPrimary,
             ),
             const SizedBox(width: 16),
-            _infoIcon(Icons.location_on_outlined, "Konum'a git", () {}),
+            _infoIcon(Icons.location_on_outlined, "Konum", () {}),
             const SizedBox(width: 16),
-            _infoIcon(Icons.share_outlined, 'Paylaş', () {}),
+            // DÜZELTME: YORUM YAP BUTONU EKLENDİ
+            // Sadece ViewModel'den gelen canUserComment bilgisi true ise gösterilir.
+            if (vm.canUserComment)
+              _infoIcon(Icons.edit_outlined, 'Yorum Yap', () => _showCommentDialog(context, vm)),
           ]),
           TextButton(
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      ChangeNotifierProvider<CommentsViewModel>(
-                        create: (_) => CommentsViewModel()
-                          ..fetchComments(salon.saloonId),
-                        child: CommentsScreen(saloonId: salon.saloonId),
-                      ),
+                  builder: (_) => ChangeNotifierProvider<CommentsViewModel>(
+                    create: (_) => CommentsViewModel()..fetchComments(salon.saloonId),
+                    child: CommentsScreen(saloonId: salon.saloonId),
+                  ),
                 ),
               );
             },
             style: TextButton.styleFrom(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
@@ -337,8 +283,7 @@ class _SalonDetailBody extends StatelessWidget {
                 ]),
                 Text(
                   '${_formatCount(salon.commentCount)} yorum',
-                  style: AppFonts.bodySmall(
-                      color: AppColors.textSecondary),
+                  style: AppFonts.bodySmall(color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -348,9 +293,7 @@ class _SalonDetailBody extends StatelessWidget {
     );
   }
 
-  Widget _infoIcon(
-      IconData icon, String label, VoidCallback onTap,
-      {Color? color}) {
+  Widget _infoIcon(IconData icon, String label, VoidCallback onTap, {Color? color}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -359,17 +302,97 @@ class _SalonDetailBody extends StatelessWidget {
         children: [
           Icon(icon, color: color ?? AppColors.textPrimary, size: 26),
           const SizedBox(height: 6),
-          Text(label,
-              style:
-              AppFonts.bodySmall(color: AppColors.textSecondary)),
+          Text(label, style: AppFonts.bodySmall(color: AppColors.textSecondary)),
         ],
       ),
     );
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // İndirim bandı
-  // ────────────────────────────────────────────────────────────────────────────
+  // DÜZELTME: YORUM YAPMA DİALOGUNU AÇAN FONKSİYON
+  void _showCommentDialog(BuildContext context, SalonDetailViewModel vm) {
+    int rating = 0;
+    final commentController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Yorum Yap'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Hizmeti Puanlayın:'),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        return IconButton(
+                          icon: Icon(
+                            index < rating ? Icons.star : Icons.star_border,
+                            color: Colors.amber,
+                          ),
+                          onPressed: () {
+                            setDialogState(() {
+                              rating = index + 1;
+                            });
+                          },
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: commentController,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        hintText: 'Yorumunuzu buraya yazın...',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('İptal'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (rating == 0 || commentController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Lütfen puan verin ve yorum yazın.')),
+                      );
+                      return;
+                    }
+
+                    final success = await vm.submitComment(
+                      rating: rating,
+                      commentText: commentController.text,
+                    );
+
+                    if (context.mounted) {
+                      Navigator.of(dialogContext).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(success ? 'Yorumunuz başarıyla gönderildi!' : 'Yorum gönderilemedi.'),
+                          backgroundColor: success ? Colors.green : Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('Gönder'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildDiscountBanner() {
     return Container(
       padding:
@@ -404,11 +427,7 @@ class _SalonDetailBody extends StatelessWidget {
     );
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // Takvim (haftalık)
-  // ────────────────────────────────────────────────────────────────────────────
-  Widget _buildCalendar(
-      BuildContext context, SalonDetailViewModel vm) {
+  Widget _buildCalendar(BuildContext context, SalonDetailViewModel vm) {
     final weekDates =
     List.generate(7, (i) => DateTime.now().add(Duration(days: i)));
     return SizedBox(
@@ -462,14 +481,7 @@ class _SalonDetailBody extends StatelessWidget {
     );
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // Kategori altı hizmet listesi (SaloonServiceItem)
-  // ────────────────────────────────────────────────────────────────────────────
-  Widget _buildCategoryServiceList(
-      BuildContext context,
-      SalonDetailViewModel vm,
-      CategoryWithServices cat,
-      ) {
+  Widget _buildCategoryServiceList(BuildContext context, SalonDetailViewModel vm, CategoryWithServices cat) {
     final services = cat.services;
     if (services.isEmpty) {
       return Center(
@@ -532,91 +544,8 @@ class _SalonDetailBody extends StatelessWidget {
       },
     );
   }
-  // (GERİYE UYUMLU) Eski ServiceModel listesi için builder – projede referans varsa kalsın
-  Widget _buildServiceList(
-      BuildContext context,
-      SalonDetailViewModel vm,
-      List<ServiceModel> services,
-      ) {
-    if (services.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 100),
-          child: Text(
-            'Bu kategoride hizmet bulunmuyor.',
-            style: AppFonts.bodyMedium(color: AppColors.textSecondary),
-          ),
-        ),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-      itemCount: services.length,
-      itemBuilder: (_, index) {
-        final s = services[index];
 
-        // 🔁 ServiceModel → ServiceModelCompat
-        final compat = ServiceModelCompat(
-          serviceId: s.serviceId,
-          serviceName: s.serviceName,
-          basePrice: s.basePrice,
-          estimatedTime: s.estimatedTime,
-        );
-
-        final isSelected = vm.isServiceSelected(compat);
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  'assets/map_placeholder.png',
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(compat.serviceName, style: AppFonts.poppinsBold(fontSize: 15)),
-                    const SizedBox(height: 4),
-                    Text('₺${compat.basePrice.toStringAsFixed(0)}',
-                        style: AppFonts.bodyMedium(color: AppColors.textSecondary)),
-                    const SizedBox(height: 4),
-                    Text('${compat.estimatedTime.inMinutes} Dk',
-                        style: AppFonts.bodySmall(color: AppColors.textSecondary)),
-                  ],
-                ),
-              ),
-              OutlinedButton(
-                onPressed: () => vm.toggleService(compat),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: isSelected ? AppColors.textOnPrimary : AppColors.primaryColor,
-                  backgroundColor: isSelected ? AppColors.primaryColor : Colors.transparent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  side: BorderSide(
-                    color: isSelected ? Colors.transparent : AppColors.primaryColor.withOpacity(0.5),
-                  ),
-                ),
-                child: Text(isSelected ? 'Çıkar' : 'Ekle +'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // ────────────────────────────────────────────────────────────────────────────
-  // Alt eylem barı (CheckoutScreen’e yönlendirme)
-  // ────────────────────────────────────────────────────────────────────────────
-  Widget _buildBottomActionBar(
-      BuildContext context, SalonDetailViewModel vm) {
+  Widget _buildBottomActionBar(BuildContext context, SalonDetailViewModel vm) {
     return Positioned(
       bottom: 20,
       left: 20,
