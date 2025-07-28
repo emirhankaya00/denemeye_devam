@@ -50,7 +50,6 @@ class _SalonDetailBody extends StatelessWidget {
       );
     }
 
-    // Kategoriler varsa dinamik tabbar
     final int tabLength = vm.categories.isNotEmpty ? vm.categories.length : 1;
     return DefaultTabController(
       length: tabLength,
@@ -66,7 +65,7 @@ class _SalonDetailBody extends StatelessWidget {
     );
   }
 
-  // DÜZELTME: ANA İÇERİK OLUŞTURUCU BİRLEŞTİRİLDİ
+  // ANA İÇERİK OLUŞTURUCU
   Widget _buildMainContent(BuildContext context, SalonDetailViewModel vm) {
     final salon = vm.salon!;
     final tabs = vm.categories.map((c) => Tab(text: c.categoryName)).toList();
@@ -74,7 +73,7 @@ class _SalonDetailBody extends StatelessWidget {
     return NestedScrollView(
       headerSliverBuilder: (_, __) => [
         _buildSliverAppBar(context, salon),
-        SliverToBoxAdapter(child: _buildActionButtons(context, vm)),
+        SliverToBoxAdapter(child: _buildActionButtons(context, vm)), // <- VM BURAYA GÖNDERİLİYOR
         SliverToBoxAdapter(child: _buildDiscountBanner()),
         SliverToBoxAdapter(child: _buildCalendar(context, vm)),
         if (vm.categories.isNotEmpty)
@@ -226,7 +225,7 @@ class _SalonDetailBody extends StatelessWidget {
     );
   }
 
-  // DÜZELTME: AKSİYON BUTONLARI ARTIK VIEWMODEL ALIYOR
+  // DÜZELTME: AKSİYON BUTONLARI ARTIK VIEWMODEL ALIYOR VE YORUM YAP BUTONU EKLENDİ
   Widget _buildActionButtons(BuildContext context, SalonDetailViewModel vm) {
     final salon = vm.salon!;
     final favorites = context.watch<FavoritesViewModel>();
@@ -237,21 +236,22 @@ class _SalonDetailBody extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(children: [
-            _infoIcon(
-              isFavorite ? Icons.favorite : Icons.favorite_border,
-              'Favori',
-                  () => favorites.toggleFavorite(salon.saloonId, salon: salon),
-              color: isFavorite ? Colors.red.shade400 : AppColors.textPrimary,
-            ),
-            const SizedBox(width: 16),
-            _infoIcon(Icons.location_on_outlined, "Konum", () {}),
-            const SizedBox(width: 16),
-            // DÜZELTME: YORUM YAP BUTONU EKLENDİ
-            // Sadece ViewModel'den gelen canUserComment bilgisi true ise gösterilir.
-            if (vm.canUserComment)
-              _infoIcon(Icons.edit_outlined, 'Yorum Yap', () => _showCommentDialog(context, vm)),
-          ]),
+          Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _infoIcon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  'Favori',
+                      () => favorites.toggleFavorite(salon.saloonId, salon: salon),
+                  color: isFavorite ? Colors.red.shade400 : AppColors.textPrimary,
+                ),
+                const SizedBox(width: 16),
+                _infoIcon(Icons.location_on_outlined, "Konum", () {}),
+                const SizedBox(width: 16),
+                // İŞTE O BUTON! Sadece kullanıcı yetkiliyse (ki artık her zaman yetkili) görünecek.
+                if (vm.canUserComment)
+                  _infoIcon(Icons.edit_outlined, 'Yorum Yap', () => _showCommentDialog(context, vm)),
+              ]),
           TextButton(
             onPressed: () {
               Navigator.push(
@@ -308,7 +308,7 @@ class _SalonDetailBody extends StatelessWidget {
     );
   }
 
-  // DÜZELTME: YORUM YAPMA DİALOGUNU AÇAN FONKSİYON
+  // DÜZELTME: YORUM YAPMA PENCERESİNİ AÇAN FONKSİYON
   void _showCommentDialog(BuildContext context, SalonDetailViewModel vm) {
     int rating = 0;
     final commentController = TextEditingController();

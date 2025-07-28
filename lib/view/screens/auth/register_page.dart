@@ -218,7 +218,12 @@ class _RegisterPageState extends State<RegisterPage> {
                       strokeWidth: 2,
                     ),
                   )
-                      : Text('Kayıt Ol', style: AppFonts.poppinsBold(fontSize: 16)),
+                      : Text(
+                    'Kayıt Ol',
+                    style: AppFonts.poppinsBold(
+                      fontSize: 16,
+                    ).copyWith(color: Colors.white),
+                  ),
                 ),
                 const SizedBox(height: 20),
 
