@@ -11,6 +11,7 @@ import '../../view_models/appointments_viewmodel.dart';
 import '../appointments/salon_detail_screen.dart';
 
 String _displayText(String status) {
+  // ... (Bu fonksiyon aynı kalabilir)
   switch (status) {
     case 'pending': return 'Onay Bekliyor';
     case 'approved': return 'Onaylandı';
@@ -34,33 +35,32 @@ class MyAppointmentsScreen extends StatelessWidget {
     final vm = context.watch<AppointmentsViewModel>();
     final now = DateTime.now();
 
-    // Filtreleme mantığı doğru ve basit, burada değişiklik yok.
+    // Filtreleme mantığı doğru, burada değişiklik yok.
     final offered = vm.allAppointments.where((r) => r.status == 'offered').toList();
     final upcoming = vm.allAppointments.where((r) => r.date.isAfter(now) && (r.status == 'pending' || r.status == 'approved')).toList();
-    final past = vm.allAppointments.where((r) => !r.date.isAfter(now) && r.status != 'offered' && r.status != 'canceled_by_user' && r.status != 'cancelled_by_user' && r.status != 'canceled_by_salon' && r.status != 'cancelled_by_salon').toList();
-    final canceled = vm.allAppointments.where((r) => r.status == 'canceled_by_user' || r.status == 'cancelled_by_user' || r.status == 'canceled_by_salon' || r.status == 'cancelled_by_salon').toList();
+    final past = vm.allAppointments.where((r) => !r.date.isAfter(now) && r.status != 'offered' && !['canceled_by_user', 'cancelled_by_user', 'canceled_by_salon', 'cancelled_by_salon'].contains(r.status)).toList();
+    final canceled = vm.allAppointments.where((r) => ['canceled_by_user', 'cancelled_by_user', 'canceled_by_salon', 'cancelled_by_salon'].contains(r.status)).toList();
 
     offered.sort((a, b) => a.date.compareTo(b.date));
     upcoming.sort((a, b) => a.date.compareTo(b.date));
     past.sort((a, b) => b.date.compareTo(a.date));
     canceled.sort((a, b) => b.date.compareTo(a.date));
 
+    // DÜZELTME: Scaffold ve AppBar kaldırıldı.
+    // Sayfa artık doğrudan DefaultTabController ile başlıyor ve bir Column içinde
+    // TabBar ve TabBarView'ı barındırıyor.
     return DefaultTabController(
       length: 4,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: const Text('Randevularım'),
-          elevation: 0,
-          backgroundColor: AppColors.background,
-          bottom: const PreferredSize(
-            preferredSize: Size.fromHeight(60),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+      child: SafeArea( // Ekranın üst çentik gibi alanlarına taşmasını engeller
+        child: Column(
+          children: [
+            // Sekme Barları (TabBar)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 0),
               child: TabBar(
                 isScrollable: true,
                 indicatorSize: TabBarIndicatorSize.tab,
-                indicator: BoxDecoration(
+                indicator: const BoxDecoration(
                     borderRadius: BorderRadius.all(Radius.circular(12)),
                     color: AppColors.primaryColor),
                 unselectedLabelColor: AppColors.textSecondary,
@@ -73,22 +73,29 @@ class MyAppointmentsScreen extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-        ),
-        body: vm.isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primaryColor))
-            : TabBarView(
-          children: [
-            _ListSection(list: offered, type: _SectionType.offered),
-            _ListSection(list: upcoming, type: _SectionType.upcoming),
-            _ListSection(list: past, type: _SectionType.past),
-            _ListSection(list: canceled, type: _SectionType.canceled),
+
+            // Yükleme durumu veya Sekme İçerikleri
+            Expanded(
+              child: vm.isLoading
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primaryColor))
+                  : TabBarView(
+                children: [
+                  _ListSection(list: offered, type: _SectionType.offered),
+                  _ListSection(list: upcoming, type: _SectionType.upcoming),
+                  _ListSection(list: past, type: _SectionType.past),
+                  _ListSection(list: canceled, type: _SectionType.canceled),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 }
+
+// _ListSection ve _AppointmentCard widget'ları aynı kalabilir.
+// ... (Önceki mesajdaki _ListSection ve _AppointmentCard kodları burada olacak)
 
 class _ListSection extends StatelessWidget {
   final List<ReservationListItem> list;
@@ -108,6 +115,7 @@ class _ListSection extends StatelessWidget {
         child: Text(msg, style: AppFonts.bodyMedium(color: AppColors.textSecondary)),
       );
     }
+
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       itemCount: list.length,
@@ -117,7 +125,6 @@ class _ListSection extends StatelessWidget {
   }
 }
 
-// DÜZELTME: _AppointmentCard widget'ı daha güvenli hale getirildi.
 class _AppointmentCard extends StatelessWidget {
   final ReservationListItem item;
   final _SectionType type;
@@ -186,17 +193,12 @@ class _AppointmentCard extends StatelessWidget {
     );
   }
 
-  // DÜZELTME: Bu metot, null veriye karşı %100 güvenli hale getirildi.
-  // Hatanın ana kaynağı buradaydı.
   Widget _buildOfferedProposalActions(BuildContext context) {
     String proposedDateStr;
-    // `item.proposedDate`'i önce bir değişkene alıyoruz.
     final pDate = item.proposedDate;
     if (pDate != null) {
-      // Eğer boş değilse, formatla. '!' operatörünü kullanmaktan kaçınıyoruz.
       proposedDateStr = DateFormat('d MMMM yyyy, HH:mm', 'tr_TR').format(pDate);
     } else {
-      // Eğer boşsa, güvenli bir varsayılan metin ata.
       proposedDateStr = 'Tarih belirtilmemiş';
     }
 
@@ -246,7 +248,6 @@ class _AppointmentCard extends StatelessWidget {
     );
   }
 
-  // Diğer buton metotları aynı kalabilir, onlarda sorun yoktu.
   Widget _buildUpcomingActions(BuildContext context) {
     return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
       TextButton(
