@@ -1,15 +1,10 @@
 import 'package:denemeye_devam/models/saloon_model.dart';
 
-enum FavouriteType {
-  saloon,
-  personal
-}
 class FavouriteModel {
   final String id;
   final String userId;
   final String? saloonId;
   final String? personalId;
-  final FavouriteType favouriteType;
   final DateTime createdAt;
   final SaloonModel? saloon;
 
@@ -18,7 +13,6 @@ class FavouriteModel {
     required this.userId,
     this.saloonId,
     this.personalId,
-    required this.favouriteType,
     required this.createdAt,
     this.saloon,
   });
@@ -29,10 +23,6 @@ class FavouriteModel {
       userId: json['user_id'],
       saloonId: json['saloon_id'],
       personalId: json['personal_id'],
-      favouriteType: FavouriteType.values.firstWhere(
-          (e) => e.name == json['favourite_type'],
-          orElse: () => FavouriteType.saloon,
-      ),
       createdAt: DateTime.tryParse(json['created_at']) ?? DateTime.now(),
       saloon: json['saloons'] != null
           ? SaloonModel.fromJson(json['saloons'])
@@ -46,7 +36,6 @@ class FavouriteModel {
       'user_id': userId,
       'saloon_id': saloonId,
       'personal_id': personalId,
-      'favourite_type': favouriteType,
       'created_at': createdAt.toIso8601String(),
     };
   }

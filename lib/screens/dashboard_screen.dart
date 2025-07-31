@@ -5,9 +5,7 @@ import 'package:denemeye_devam/models/saloon_model.dart';
 import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-// AuthViewModel import'ı kaldırıldı çünkü artık _TopBar burada değil.
-// import '../viewmodels/auth_viewmodel.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -39,52 +37,109 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 // ANA İÇERİK WIDGET'I
-class _DashboardContent extends StatelessWidget {
-  // onSearchTap parametresi artık _TopBar kaldırıldığı için gerekli değil.
-  const _DashboardContent({super.key});
+class _DashboardContent extends StatefulWidget {
+  const _DashboardContent({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final viewModel = Provider.of<DashboardViewModel>(context);
+  State<_DashboardContent> createState() => _DashboardContentState();
+}
 
-    return Column( // Scaffold yerine Column kullanıyoruz, çünkü Scaffold ana RootScreen'da.
+class _DashboardContentState extends State<_DashboardContent> {
+  @override
+  Widget build(BuildContext context) {
+    final vm = Provider.of<DashboardViewModel>(context);
+
+    if (vm.currentPosition == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final userLatLng = LatLng(
+      vm.currentPosition!.latitude,
+      vm.currentPosition!.longitude,
+    );
+
+    return Column(
       children: [
-        // _TopBar widget'ı kaldırıldı, AppBar artık RootScreen'da yönetiliyor.
         Expanded(
-          child: viewModel.isLoading && viewModel.nearbySaloons.isEmpty
+          child: vm.isLoading && vm.nearbySaloons.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : RefreshIndicator(
-            onRefresh: () => viewModel.fetchDashboardData(),
+            onRefresh: () async {
+              await vm.fetchDashboardData();
+              vm.moveCameraToUser();
+            },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Harita bölümü
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(15),
-                      child: Image.asset(
-                        'assets/map_placeholder.png',
-                        fit: BoxFit.cover,
+                      child: SizedBox(
                         height: 200,
                         width: double.infinity,
+                        child: Stack(
+                          children: [
+                            GoogleMap(
+                              padding: const EdgeInsets.only(top: 80),
+                              initialCameraPosition: CameraPosition(
+                                target: userLatLng,
+                                zoom: 14,
+                              ),
+                              onMapCreated: vm.onMapCreated,
+                              myLocationEnabled: true,
+                              myLocationButtonEnabled: true,
+                              zoomControlsEnabled: false,
+                              markers: {
+                                Marker(
+                                  markerId: const MarkerId('user'),
+                                  position: userLatLng,
+                                ),
+                              },
+                            ),
+                            Positioned(
+                              top: 16,
+                              right: 16,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white70,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: IconButton(
+                                  icon: const Icon(Icons.fullscreen),
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => FullScreenMapPage(
+                                          initialPosition: userLatLng,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                  const SectionTitle(
-                    title: 'Yakınlarda bulunan salonlar',
-                  ),
-                  SaloonList(saloons: viewModel.nearbySaloons),
-                  const SectionDivider(),
-                  const SectionTitle(title: 'En yüksek puanlı salonlar'),
-                  SaloonList(saloons: viewModel.topRatedSaloons),
+
+                  // Salon listeleri
+                  const SectionTitle(title: 'Yakınlarda bulunan salonlar'),
+                  SaloonList(saloons: vm.nearbySaloons),
                   const SectionDivider(),
 
-                  // --- KAMPANYALI SALONLAR BÖLÜMÜNÜ GERİ EKLEDİK ---
+                  const SectionTitle(title: 'En yüksek puanlı salonlar'),
+                  SaloonList(saloons: vm.topRatedSaloons),
+                  const SectionDivider(),
+
                   const SectionTitle(title: 'Kampanyadaki salonlar'),
                   SaloonList(
-                    saloons: viewModel.campaignSaloons,
+                    saloons: vm.campaignSaloons,
                     hasCampaign: true,
                   ),
                   const SizedBox(height: 20),
@@ -97,6 +152,41 @@ class _DashboardContent extends StatelessWidget {
     );
   }
 }
+
+
+/// Tam ekran harita sayfası
+class FullScreenMapPage extends StatelessWidget {
+  final LatLng initialPosition;
+
+  const FullScreenMapPage({Key? key, required this.initialPosition})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = Provider.of<DashboardViewModel>(context, listen: false);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Harita')),
+      body: GoogleMap(
+        initialCameraPosition: CameraPosition(
+          target: initialPosition,
+          zoom: 14,
+        ),
+        onMapCreated: vm.onMapCreated,
+        myLocationEnabled: true,
+        myLocationButtonEnabled: true,
+        zoomControlsEnabled: true,
+        markers: {
+          Marker(
+            markerId: const MarkerId('user'),
+            position: initialPosition,
+          ),
+        },
+      ),
+    );
+  }
+}
+
 
 
 class SectionTitle extends StatelessWidget {
