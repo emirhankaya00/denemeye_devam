@@ -19,53 +19,52 @@ class NotificationsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Bildirimler')),
+      // Pull to refresh eklendi:
       body: vm.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _buildList(context, vm),
+          : RefreshIndicator(
+        onRefresh: vm.fetchAppointments,
+        child: _buildList(context, vm),
+      ),
     );
   }
 
   Widget _buildList(BuildContext context, AppointmentsViewModel vm) {
-    final items = vm.allAppointments;
+    final items = [...vm.allAppointments]
+    ..sort((a,b) => b.createdAt.compareTo(a.createdAt));
     // Tarihe göre grupla
     final grouped = _groupByDate(items);
 
     return ListView(
-      children: grouped.entries.expand((entry) {
-        final header = entry.key;
-        final list = entry.value;
-        return [
+      physics: const AlwaysScrollableScrollPhysics(), // RefreshIndicator için
+      children: [
+        for (final entry in grouped.entries) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
-              header,
+              entry.key,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          ...list.map((res) {
-            final msg = _messageForStatus(res.status);
-            final ago = _timeAgo(res.createdAt);
-            return GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const AppointmentsScreen(),
-                  ),
-                );
-              },
+          for (final res in entry.value)
+            GestureDetector(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const AppointmentsScreen(),
+                ),
+              ),
               child: NotificationCard(
                 title: res.saloon?.saloonName ?? '—',
-                message: msg,
-                timeAgo: ago,
+                message: _messageForStatus(res.status),
+                timeAgo: _timeAgo(res.createdAt),
                 badgeCount: 1,
               ),
-            );
-          }),
-        ];
-      }).toList(),
+            ),
+        ],
+      ],
     );
   }
 

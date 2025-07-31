@@ -39,6 +39,7 @@ dependencies:
   provider: ^6.1.5
   google_maps_flutter: ^2.12.3
   geolocator: ^9.0.2
+  flutter_local_notifications: ^19.4.0
 
 
 dev_dependencies:
