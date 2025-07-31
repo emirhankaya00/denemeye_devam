@@ -32,6 +32,15 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => SearchViewModel()),
         ChangeNotifierProvider(create: (_) => AppointmentsViewModel()),
+        ChangeNotifierProvider(
+          create: (_) {
+            final vm = DashboardViewModel();
+            vm.initLocation(); // konumu al
+            vm.fetchDashboardData(); // halihazırda vardı
+            return vm;
+          },
+          child: const RootScreen(),
+        ),
       ],
       child: const MyApp(),
     ),

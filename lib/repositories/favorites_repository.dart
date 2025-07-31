@@ -16,8 +16,7 @@ class FavoritesRepository {
     final data = await _client
         .from('favourites')
         .select('*, saloons(*)') // Sadece salonları çekiyoruz
-        .eq('user_id', userId)
-        .eq('favourite_type', 'saloon');
+        .eq('user_id', userId);
     return data.map((item) => FavouriteModel.fromJson(item)).toList();
   }
 
@@ -26,7 +25,6 @@ class FavoritesRepository {
     await _client.from('favourites').insert({
       'user_id': _userId,
       'saloon_id': salonId,
-      'favourite_type': 'saloon',
     });
   }
 
