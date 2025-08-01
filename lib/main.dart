@@ -10,6 +10,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:denemeye_devam/core/app_colors.dart';
 import 'package:denemeye_devam/screens/root_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -19,20 +20,27 @@ import 'features/auth/screens/home_page.dart';
 // import 'package:denemeye_devam/viewmodels/auth_viewmodel.dart';
 
 void main() async {
+  // 1) Load environment variables
+  await dotenv.load(fileName: ".env");
+
   WidgetsFlutterBinding.ensureInitialized();
+  // 2) Initialize date formatting
   await initializeDateFormatting('tr', null);
+
+  // 3) Initialize Supabase BEFORE using Supabase.instance.client
   await Supabase.initialize(
-    url: 'https://ndptlhgrilvxrxogzuyw.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kcHRsaGdyaWx2eHJ4b2d6dXl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5MjI3OTUsImV4cCI6MjA2NzQ5ODc5NX0.rhLSmN3BMgxovaOxOkUoTxSMaa-V3Nh_x9Hfv5B9aWA',
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
+
+  // 4) Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // 5) Register background message handler
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-  // Kendi oluşturduğumuz bildirim servisini başlatıyoruz.
-  // Bu, token'ı alıp Supabase'e kaydedecek.
+  // 6) Initialize NotificationService (token saving & listeners)
   await NotificationService().initialize();
 
   runApp(

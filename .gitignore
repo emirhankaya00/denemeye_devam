@@ -1,3 +1,7 @@
+# Gizli dosyalar / Secret files
+supabase/functions/send-notification/serviceAccount.json
+**/google-services.json
+
 # Miscellaneous
 *.class
 *.log

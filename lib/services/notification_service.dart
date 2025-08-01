@@ -1,98 +1,78 @@
 // lib/services/notification_service.dart
-
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-// UYGULAMA KAPALIYKEN VEYA ARKA PLANDAYKEN BİLDİRİM GELDİĞİNDE BU FONKSİYON ÇALIŞIR.
-// ÖNEMLİ: BU FONKSİYON BİR SINIFIN DIŞINDA, DOSYANIN EN ÜST SEVİYESİNDE OLMALIDIR.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Geliştirme aşamasında loglama yapmak faydalıdır.
+  if (!Firebase.apps.isNotEmpty) await Firebase.initializeApp();
   if (kDebugMode) {
-    print("--- Arka Plan Bildirimi Geldi ---");
-    print("Bildirim Başlığı: ${message.notification?.title}");
-    print("Bildirim İçeriği: ${message.notification?.body}");
-    print("Özel Veri (Data): ${message.data}");
+    debugPrint('--- Background Notification ---');
+    debugPrint('title: ${message.notification?.title}');
+    debugPrint('body: ${message.notification?.body}');
+    debugPrint('data: ${message.data}');
   }
 }
 
 class NotificationService {
-  // Firebase Messaging nesnesini tek bir yerden yönetmek için.
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  late final FirebaseMessaging _messaging;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Supabase istemcisini kolay erişim için al.
-  final SupabaseClient _supabaseClient = Supabase.instance.client;
-
-  /// Bildirim sistemini başlatan ve gerekli izinleri alan ana fonksiyon.
   Future<void> initialize() async {
-    // 1. Apple (iOS, macOS) cihazlar için bildirim izni iste.
-    // Android'de bu genellikle otomatik yönetilir ama istemek en iyi pratiktir.
-    await _firebaseMessaging.requestPermission();
-
-    // 2. Cihaza özel FCM (Firebase Cloud Messaging) token'ını al.
-    final String? fcmToken = await _firebaseMessaging.getToken();
-
-    // Token'ı konsola yazdırarak test et.
-    if (kDebugMode) {
-      print("====================================");
-      print("Cihazın FCM Token'ı: $fcmToken");
-      print("====================================");
-    }
-
-    // 3. Alınan token'ı Supabase veritabanına kaydet.
-    if (fcmToken != null) {
-      await _saveTokenToSupabase(fcmToken);
-    }
-
-    // 4. Uygulama ön plandayken gelecek bildirimleri dinleyecek listener'ı ayarla.
-    _setupForegroundNotificationListener();
-  }
-
-  /// Alınan FCM token'ını Supabase'deki ilgili kullanıcının profiline kaydeder veya günceller.
-  Future<void> _saveTokenToSupabase(String token) async {
-    // Giriş yapmış olan mevcut kullanıcıyı al.
-    final currentUser = _supabaseClient.auth.currentUser;
-
-    if (currentUser != null) {
-      try {
-        // 'fcm_token' -> Bu token'ı saklayacağın sütunun adı. (Bu sütunu tablonuzda oluşturmalısınız)
-        await _supabaseClient
-            .from('users') // KENDİ KULLANICI TABLONUN ADINI YAZ
-            .upsert({
-          'id': currentUser.id,
-          'fcm_token': token
-        });
-
-        if (kDebugMode) {
-          print("✅ FCM Token, Supabase'e başarıyla kaydedildi.");
-        }
-      } catch (error) {
-        if (kDebugMode) {
-          print("❌ Supabase'e token kaydederken hata oluştu: $error");
-        }
-      }
-    } else {
+    await dotenv.load(fileName: ".env");
+    await Firebase.initializeApp();
+    _messaging = FirebaseMessaging.instance;
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    FirebaseMessaging.onMessage.listen((RemoteMessage msg) {
       if (kDebugMode) {
-        print("🤔 Token kaydedilemedi: Aktif bir kullanıcı bulunamadı.");
-      }
-    }
-  }
-
-  /// Uygulama ekranı açıkken (ön planda) gelen bildirimleri dinler.
-  void _setupForegroundNotificationListener() {
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      if (kDebugMode) {
-        print('--- Uygulama Ön Plandayken Bildirim Geldi ---');
-        if (message.notification != null) {
-          print('Başlık: ${message.notification!.title}');
-          print('İçerik: ${message.notification!.body}');
-
-          // TODO: Uygulama açıkken bildirim göstermek için
-          // flutter_local_notifications paketini kullanarak burada yerel bir
-          // bildirim tetikleyebilirsin.
-        }
+        debugPrint('--- Foreground Notification ---');
+        debugPrint('title: ${msg.notification?.title}');
+        debugPrint('body: ${msg.notification?.body}');
+        debugPrint('data: ${msg.data}');
       }
     });
+    await _messaging.requestPermission();
+    final token = await _messaging.getToken();
+    if (kDebugMode) debugPrint('FCM Token: $token');
+    if (token != null) {
+      final user = _supabase.auth.currentUser;
+      if (user != null) {
+        await _supabase
+            .from('users')
+            .upsert({'id': user.id, 'fcm_token': token});
+        if (kDebugMode) debugPrint('✅ Token kaydedildi');
+      }
+    }
+  }
+
+  static Future<void> sendReservationNotification({
+    required String userId,
+    required String status,
+  }) async {
+    final functionsUrl = dotenv.env['SUPABASE_FUNCTIONS_URL'];
+    if (functionsUrl == null) {
+      if (kDebugMode) debugPrint('SUPABASE_FUNCTIONS_URL eksik');
+      return;
+    }
+    final endpoint = '$functionsUrl/send-notification';
+    if (kDebugMode) {
+      debugPrint('📨 Sending to $endpoint');
+      debugPrint('Payload: {userId: $userId, status: $status}');
+    }
+    try {
+      final res = await http.post(
+        Uri.parse(endpoint),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': userId, 'status': status}),
+      );
+      if (kDebugMode) debugPrint('Response: ${res.statusCode} ${res.body}');
+      if (res.statusCode != 200) throw Exception('Notification failed');
+    } catch (e) {
+      if (kDebugMode) debugPrint('Error sending notification: $e');
+    }
   }
 }
