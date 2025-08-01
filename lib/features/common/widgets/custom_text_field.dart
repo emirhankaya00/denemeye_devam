@@ -10,7 +10,8 @@ class CustomTextField extends StatefulWidget {
   final TextInputType? keyboardType;
   final int maxLines;
   final FocusNode? focusNode;
-  final bool isFocused; // Input'un odaklanıp odaklanmadığını dışarıdan alacağız
+  final bool isFocused;
+  final Widget? suffixIcon;// Input'un odaklanıp odaklanmadığını dışarıdan alacağız
 
   const CustomTextField({
     super.key,
@@ -22,6 +23,7 @@ class CustomTextField extends StatefulWidget {
     this.keyboardType,
     this.maxLines = 1,
     this.focusNode,
+    this.suffixIcon,
     required this.isFocused, // Artık zorunlu parametre
   });
 
@@ -35,8 +37,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
     final bool isPassword = widget.obscureText;
 
     // Focus durumuna göre border ve shadow renklerini ayarla
-    final Color borderColor = widget.isFocused ? AppColors.accentColor : AppColors.borderColor;
-    final Color shadowColor = widget.isFocused ? AppColors.accentColor.withValues(alpha: 0.3) : Colors.transparent;
+    final Color borderColor = widget.isFocused ? AppColors.primaryColor : AppColors.borderColor;
+    final Color shadowColor = widget.isFocused ? AppColors.primaryColor.withValues(alpha: 0.3) : Colors.transparent;
     final double elevation = widget.isFocused ? 8.0 : 3.0; // Focuslandığında daha belirgin yükselsin
 
     return AnimatedContainer(
@@ -62,6 +64,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         maxLines: widget.maxLines,
         cursorColor: AppColors.accentColor, // İmleç rengi
 
+
         style: TextStyle(
           color: AppColors.textColorDark, // Yazı rengi
           fontSize: 16,
@@ -81,18 +84,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             color: widget.isFocused ? AppColors.accentColor : AppColors.iconColor,
           )
               : null,
-          suffixIcon: isPassword
-              ? IconButton(
-            icon: Icon(
-              // Şifre gösterme/gizleme ikonu (İstersen ekleyebiliriz)
-              Icons.visibility,
-              color: AppColors.iconColor,
-            ),
-            onPressed: () {
-              // Bu kısımda şifre gösterme/gizleme mantığı eklenebilir
-            },
-          )
-              : null,
+          suffixIcon: widget.suffixIcon,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           border: InputBorder.none, // Varsayılan TextField border'ını kaldırıyoruz
           // İç dolguyu daha yumuşak göstermek için
