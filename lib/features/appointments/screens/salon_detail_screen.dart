@@ -1,7 +1,6 @@
 // GEREKLİ TÜM IMPORT'LAR BURADA
 import 'package:denemeye_devam/core/app_colors.dart';
 import 'package:denemeye_devam/core/app_fonts.dart';
-import 'package:denemeye_devam/models/personal_model.dart';
 import 'package:denemeye_devam/models/service_model.dart';
 import 'package:denemeye_devam/models/saloon_model.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +8,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../../models/comment_model.dart';
+import '../../../viewmodels/comments_viewmodel.dart';
 import '../../../viewmodels/favorites_viewmodel.dart';
 import '../../../viewmodels/saloon_detail_viewmodel.dart';
 
@@ -30,20 +31,32 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ViewModel'ı bu ekran için özel olarak burada oluşturup sağlıyoruz.
-    // Böylece her SalonDetay sayfası kendi ViewModel'ına sahip oluyor.
-    return ChangeNotifierProvider(
-      create: (_) => SalonDetailViewModel()..fetchSalonDetails(widget.salonId),
-      child: Consumer<SalonDetailViewModel>(
-        builder: (context, viewModel, child) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) =>
+          SalonDetailViewModel()..fetchSalonDetails(widget.salonId),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CommentsViewModel()..fetchComments(widget.salonId),
+        ),
+      ],
+      child: Consumer2<SalonDetailViewModel, CommentsViewModel>(
+        builder: (context, salonVM, commentsVM, child) {
+          if (salonVM.isLoading) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (salonVM.salon == null) {
+            return const Scaffold(
+              body: Center(child: Text('Salon bilgileri alınamadı.')),
+            );
+          }
           return Scaffold(
             extendBodyBehindAppBar: true,
             appBar: _buildAppBar(context),
-            body: viewModel.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : viewModel.salon == null
-                ? const Center(child: Text('Salon bilgileri alınamadı.'))
-                : _buildContent(context, viewModel),
+            body: _buildContent(context, salonVM, commentsVM),
           );
         },
       ),
@@ -51,61 +64,51 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context) {
-    final favoritesViewModel = context.watch<FavoritesViewModel>();
-    final salonDetailViewModel = context.read<SalonDetailViewModel>();
-    final bool isCurrentlyFavorite = favoritesViewModel.isSalonFavorite(
-      widget.salonId,
-    );
+    final favVM = context.watch<FavoritesViewModel>();
+    final detailVM = context.read<SalonDetailViewModel>();
+    final isFav = favVM.isSalonFavorite(widget.salonId);
 
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
       leading: IconButton(
         icon: Container(
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             color: AppColors.textOnPrimary,
             shape: BoxShape.circle,
           ),
-          padding: const EdgeInsets.all(4.0),
           child: Icon(Icons.arrow_back, color: AppColors.primaryColor),
         ),
         onPressed: () => Navigator.pop(context),
       ),
       actions: [
-        // --- BU KISIM GÜNCELLENDİ ---
         IconButton(
           icon: Container(
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: AppColors.textOnPrimary,
               shape: BoxShape.circle,
             ),
-            padding: const EdgeInsets.all(4.0),
-            // Favori durumuna göre dolu veya boş kalp göster
             child: Icon(
-              isCurrentlyFavorite ? Icons.favorite : Icons.favorite_border,
-              color: isCurrentlyFavorite
-                  ? Colors.red.shade400
-                  : AppColors.primaryColor,
+              isFav ? Icons.favorite : Icons.favorite_border,
+              color: isFav ? Colors.red.shade400 : AppColors.primaryColor,
             ),
           ),
-          // Butona basıldığında ViewModel'daki fonksiyonu çağır
-          onPressed: () {
-            favoritesViewModel.toggleFavorite(
-              widget.salonId,
-              salon: salonDetailViewModel
-                  .salon, // Anlık güncelleme için salon bilgisini de yolla
-            );
-          },
+          onPressed: () =>
+              favVM.toggleFavorite(widget.salonId, salon: detailVM.salon),
         ),
-        // ------------------------
         const SizedBox(width: 10),
       ],
     );
   }
 
-  Widget _buildContent(BuildContext context, SalonDetailViewModel viewModel) {
-    final salon = viewModel
-        .salon!; // viewModel.salon null değil, kontrolü yukarıda yaptık.
+  Widget _buildContent(
+      BuildContext context,
+      SalonDetailViewModel salonVM,
+      CommentsViewModel commentsVM,
+      ) {
+    final salon = salonVM.salon!;
 
     return Stack(
       children: [
@@ -126,45 +129,121 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context, salon),
+
               const SizedBox(height: 20),
               _buildSectionTitle('Takvim'),
-              _buildCalendar(context, viewModel),
+              _buildCalendar(context, salonVM),
+
               const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: ElevatedButton(
-                  onPressed: () =>
-                      _showAppointmentBookingBottomSheet(context, viewModel),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryColor,
-                    foregroundColor: AppColors.textOnPrimary,
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  child: Text(
-                    'Randevu Al',
-                    style: AppFonts.poppinsBold(fontSize: 18),
-                  ),
-                ),
-              ),
+              _buildAppointmentButton(context, salonVM),
+
               const SizedBox(height: 20),
               _buildSectionTitle('Hizmetler'),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: salon.services.length,
-                itemBuilder: (context, index) {
-                  final service = salon.services[index];
-                  return _buildServiceListItem(service);
-                },
-              ),
+              _buildServicesList(salon.services),
+
+              const SizedBox(height: 20),
+              _buildSectionTitle('Yorumlar'),
+              _buildCommentsSection(commentsVM),
+
               const SizedBox(height: 20),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAppointmentButton(
+      BuildContext context, SalonDetailViewModel vm) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ElevatedButton(
+        onPressed: () => _showAppointmentBookingBottomSheet(context, vm),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryColor,
+          foregroundColor: AppColors.textOnPrimary,
+          minimumSize: const Size(double.infinity, 50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+        child: Text('Randevu Al',
+            style: AppFonts.poppinsBold(fontSize: 18)),
+      ),
+    );
+  }
+
+  Widget _buildServicesList(List<ServiceModel> services) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: services.length,
+      itemBuilder: (context, i) => _buildServiceListItem(services[i]),
+    );
+  }
+
+  Widget _buildCommentsSection(CommentsViewModel vm) {
+    if (vm.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (vm.error != null) {
+      return Center(child: Text(vm.error!));
+    }
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: vm.comments.length,
+      itemBuilder: (context, i) => _buildCommentListItem(vm.comments[i]),
+    );
+  }
+
+  Widget _buildCommentListItem(CommentModel c) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.cardColor,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // avatarUrl varsa göster, yoksa ismin ilk harfini
+          CircleAvatar(
+            radius: 20,
+            backgroundImage: c.userAvatarUrl != null
+                ? NetworkImage(c.userAvatarUrl!)
+                : null,
+            child: c.userAvatarUrl == null
+                ? Text(c.userName[0].toUpperCase())
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(c.userName, style: AppFonts.poppinsBold()),
+                const SizedBox(height: 4),
+                Text(c.commentText),
+                const SizedBox(height: 6),
+                Text(
+                  DateFormat('dd MMM yyyy – HH:mm', 'tr_TR')
+                      .format(c.createdAt),
+                  style: AppFonts.bodySmall(color: AppColors.textColorLight),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(
+              c.rating,
+                  (_) => const Icon(Icons.star, size: 16, color: Colors.amber),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -422,20 +501,6 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                                 activeColor: AppColors.primaryColor,
                               );
                             }),
-                            const SizedBox(height: 20),
-                            _buildSectionTitle('Çalışan Seçimi'),
-                            ...vm.employees.map((employee) {
-                              return RadioListTile<PersonalModel>(
-                                title: Text(
-                                  '${employee.name} ${employee.surname}',
-                                ),
-                                value: employee,
-                                groupValue: vm.selectedEmployee,
-                                onChanged: (val) =>
-                                    vm.selectEmployeeForAppointment(val!),
-                                activeColor: AppColors.primaryColor,
-                              );
-                            }),
                           ],
                         ),
                       ),
@@ -445,9 +510,7 @@ class _SalonDetailScreenState extends State<SalonDetailScreen> {
                       child: ElevatedButton(
                         onPressed:
                             vm.selectedTimeSlot != null &&
-                                vm.selectedService != null &&
-                                vm.selectedEmployee != null
-                            ? () async {
+                                vm.selectedService != null ? () async {
                                 try {
                                   await vm.createReservation();
                                   if (!context.mounted) return;

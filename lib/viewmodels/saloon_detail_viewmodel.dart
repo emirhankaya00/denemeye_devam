@@ -28,7 +28,6 @@ class SalonDetailViewModel extends ChangeNotifier {
   DateTime? selectedDate;
   String? selectedTimeSlot;
   ServiceModel? selectedService;
-  PersonalModel? selectedEmployee;
 
   // --- ANA VERİ ÇEKME FONKSİYONU ---
   Future<void> fetchSalonDetails(String salonId) async {
@@ -57,7 +56,6 @@ class SalonDetailViewModel extends ChangeNotifier {
     selectedDate = date;
     // Yeni tarih seçildiğinde, saat/çalışan gibi seçimleri sıfırla
     selectedTimeSlot = null;
-    selectedEmployee = null;
     notifyListeners();
   }
 
@@ -71,10 +69,6 @@ class SalonDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void selectEmployeeForAppointment(PersonalModel employee) {
-    selectedEmployee = employee;
-    notifyListeners();
-  }
 
   // --- RANDEVU OLUŞTURMA FONKSİYONU ---
   Future<void> createReservation() async {
@@ -82,8 +76,7 @@ class SalonDetailViewModel extends ChangeNotifier {
     if (salon == null ||
         selectedDate == null ||
         selectedTimeSlot == null ||
-        selectedService == null ||
-        selectedEmployee == null) {
+        selectedService == null) {
       throw Exception('Lütfen randevu için tüm alanları seçin.');
     }
 
@@ -96,7 +89,6 @@ class SalonDetailViewModel extends ChangeNotifier {
       reservationId: '', // DB kendi atayacak
       userId: userId,
       saloonId: salon!.saloonId,
-      personalId: selectedEmployee!.personalId,
       reservationDate: selectedDate!,
       reservationTime: selectedTimeSlot!,
       totalPrice: selectedService!.basePrice, // Fiyatı hizmetten al
@@ -111,7 +103,6 @@ class SalonDetailViewModel extends ChangeNotifier {
     // İşlem sonrası seçimleri temizle
     selectedTimeSlot = null;
     selectedService = null;
-    selectedEmployee = null;
     notifyListeners();
   }
   Future<void> toggleFavorite() async {
