@@ -39,15 +39,7 @@ dependencies:
   provider: ^6.1.5
   google_maps_flutter: ^2.12.3
   geolocator: ^9.0.2
-  flutter_dotenv: ^5.2.1
-  # Firebase Core
-  firebase_core: ^2.27.1 # En güncel sürümü kullan
-
-  # Firebase Cloud Messaging
-  firebase_messaging: ^14.7.20 # En güncel sürümü kullan
-
-  # Bildirimler uygulama ön plandayken göstermek için (opsiyonel ama önerilir)
-  flutter_local_notifications: ^19.4.0 # En güncel sürümü kullan
+  flutter_local_notifications: ^19.4.0
 
 
 dev_dependencies:
@@ -84,7 +76,6 @@ flutter: # Bu ilk 'flutter:' bloğu
           weight: 700
   assets:
     - assets/map_placeholder.png
-    - .env
 
   # To add assets to your application, add an assets section, like this:
   # assets:
