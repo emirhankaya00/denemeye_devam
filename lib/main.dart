@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'features/auth/screens/home_page.dart';
+import 'package:denemeye_devam/viewmodels/comments_viewmodel.dart';
 // Eğer bir AuthViewModel'ın varsa onu da import et
 // import 'package:denemeye_devam/viewmodels/auth_viewmodel.dart';
 
@@ -27,6 +28,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => DashboardViewModel()),
+        ChangeNotifierProvider(create: (_) => CommentsViewModel()),
         ChangeNotifierProvider(create: (_) => FavoritesViewModel()),
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => SearchViewModel()),

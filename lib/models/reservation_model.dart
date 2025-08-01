@@ -14,7 +14,6 @@ class ReservationModel {
   final String reservationId;
   final String userId;
   final String saloonId;
-  final String? personalId;
   final DateTime reservationDate;     // sadece tarih
   final String reservationTime;       // saat kısmı, HH:mm:ss string olarak alınır
   final double totalPrice;
@@ -28,7 +27,6 @@ class ReservationModel {
     required this.reservationId,
     required this.userId,
     required this.saloonId,
-    this.personalId,
     required this.reservationDate,
     required this.reservationTime,
     required this.totalPrice,
@@ -53,7 +51,6 @@ class ReservationModel {
       reservationId: json['reservation_id'] as String? ?? '', // null ise boş string ata
       userId: json['user_id'] as String? ?? '',
       saloonId: json['saloon_id'] as String? ?? '',
-      personalId: json['personal_id'] as String?, // Direkt nullable olarak al
       reservationDate: DateTime.tryParse(json['reservation_date'] ?? '') ?? DateTime.now(),
       reservationTime: json['reservation_time'] as String? ?? '00:00',
       totalPrice: (json['total_price'] as num?)?.toDouble() ?? 0.0,
@@ -75,7 +72,6 @@ class ReservationModel {
       'reservation_id': reservationId,
       'user_id': userId,
       'saloon_id': saloonId,
-      'personal_id': personalId,
       'reservation_date': reservationDate.toIso8601String().split('T')[0], // sadece tarih
       'reservation_time': reservationTime, // genelde string tutulur (örn: "14:30:00")
       'total_price': totalPrice,
