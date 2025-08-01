@@ -10,38 +10,32 @@ import 'package:denemeye_devam/screens/root_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'features/auth/screens/home_page.dart';
 import 'package:denemeye_devam/viewmodels/comments_viewmodel.dart';
-// Eğer bir AuthViewModel'ın varsa onu da import et
-// import 'package:denemeye_devam/viewmodels/auth_viewmodel.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // Import flutter_dotenv
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('tr', null);
+
+  // Load the .env file
+  await dotenv.load(fileName: ".env");
+
   await Supabase.initialize(
-    url: '',
-    anonKey: '',
+    // Access the keys from dotenv
+    url: dotenv.env['REMOVED']!,
+    anonKey: dotenv.env['REMOVED']!,
   );
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => DashboardViewModel()),
+        ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => CommentsViewModel()),
         ChangeNotifierProvider(create: (_) => FavoritesViewModel()),
-        ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => SearchViewModel()),
         ChangeNotifierProvider(create: (_) => AppointmentsViewModel()),
-        ChangeNotifierProvider(
-          create: (_) {
-            final vm = DashboardViewModel();
-            vm.initLocation(); // konumu al
-            vm.fetchDashboardData(); // halihazırda vardı
-            return vm;
-          },
-          child: const RootScreen(),
-        ),
+        ChangeNotifierProvider(create: (_) => DashboardViewModel()),
       ],
       child: const MyApp(),
     ),
@@ -53,7 +47,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Supabase oturumunu kontrol et
     final session = Supabase.instance.client.auth.currentSession;
     final bool isLoggedIn = session != null;
 
@@ -68,11 +61,7 @@ class MyApp extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
       ),
-      // Kullanıcı giriş yaptıysa RootScreen'e, yapmadıysa HomePage'e git.
-      // Bu, uygulamanın ilk açılışında doğru ekranı göstermesini sağlar.
       home: isLoggedIn ? const RootScreen() : const HomePage(),
-      // Veya direkt olarak HomePage() ile başlayıp, HomePage içinde kontrolü yapabilirsin.
-      // home: const HomePage(),
     );
   }
 }

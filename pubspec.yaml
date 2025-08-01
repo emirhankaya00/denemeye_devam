@@ -40,6 +40,8 @@ dependencies:
   google_maps_flutter: ^2.12.3
   geolocator: ^9.0.2
   flutter_dotenv: ^5.2.1
+  cached_network_image: ^3.4.1
+
 
 
 dev_dependencies:
@@ -78,6 +80,7 @@ flutter: # Bu ilk 'flutter:' bloğu
     - assets/map_placeholder.png
     - assets/google_logo.png
     - assets/iris_logo.jpg
+    - .env
 
   # To add assets to your application, add an assets section, like this:
   # assets:

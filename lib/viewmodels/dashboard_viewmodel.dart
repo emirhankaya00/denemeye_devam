@@ -6,62 +6,70 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DashboardViewModel extends ChangeNotifier {
+  String? locationError;
   GoogleMapController? mapController;
   Position? currentPosition;
   final SaloonRepository _repository = SaloonRepository(Supabase.instance.client);
 
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
+  // Constructor artık boş. ViewModel oluşturulunca otomatik bir işlem yapmıyor.
+  DashboardViewModel();
 
-  List<SaloonModel> _nearbySaloons = [];
-  List<SaloonModel> get nearbySaloons => _nearbySaloons;
-
-  // --- YENİ LİSTELER EKLİYORUZ ---
-  List<SaloonModel> _topRatedSaloons = [];
-  List<SaloonModel> get topRatedSaloons => _topRatedSaloons;
-
-  List<SaloonModel> _campaignSaloons = [];
-  List<SaloonModel> get campaignSaloons => _campaignSaloons;
-
-
-  DashboardViewModel() {
-    fetchDashboardData();
-  }
+  /// Cihazın konumunu alır ve `currentPosition` değişkenini günceller.
+  /// Hata durumlarını ve izinleri yönetir.
   Future<void> initLocation() async {
-    // 1. Servis kontrol
-    if (!await Geolocator.isLocationServiceEnabled()) {
-      return Future.error('Konum servisi kapalı');
-    }
-    // 2. İzin iste
-    var perm = await Geolocator.checkPermission();
-    if (perm == LocationPermission.denied) {
-      perm = await Geolocator.requestPermission();
-      if (perm == LocationPermission.denied) {
-        return Future.error('Konum izni reddedildi');
+    locationError = null;
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        throw 'Konum servisi kapalı. Lütfen aktif hale getirin.';
       }
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+        if (perm == LocationPermission.denied) {
+          throw 'Konum izni reddedildi.';
+        }
+      }
+      if (perm == LocationPermission.deniedForever) {
+        throw 'Konum izni kalıcı olarak reddedildi. Ayarlardan izin vermeniz gerekmektedir.';
+      }
+      currentPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      // Konum alındığında dinleyicileri (UI'ı) bilgilendir.
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Konum alınamadı: $e");
+      locationError = e.toString();
+      // UI'da gösterilecek bir hata durumu da yönetilebilir.
     }
-    if (perm == LocationPermission.deniedForever) {
-      return Future.error('Konum izni kalıcı olarak reddedildi');
+    finally {
+      notifyListeners(); // <-- Başarılı veya hatalı her durumda UI'ı güncelle
     }
-    // 3. Konumu al
-    currentPosition = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
-    notifyListeners();
   }
+
+  /// UI'daki FutureBuilder'ların kullanması için repository'deki metodu doğrudan çağırır.
+  Future<List<SaloonModel>> getNearbySaloons() {
+    return _repository.getNearbySaloons();
+  }
+
+  /// UI'daki FutureBuilder'ların kullanması için repository'deki metodu doğrudan çağırır.
+  Future<List<SaloonModel>> getTopRatedSaloons() {
+    return _repository.getTopRatedSaloons();
+  }
+
+  /// UI'daki FutureBuilder'ların kullanması için repository'deki metodu doğrudan çağırır.
+  Future<List<SaloonModel>> getCampaignSaloons() {
+    return _repository.getCampaignSaloons();
+  }
+
+
+  // --- Harita Kontrol Metodları (Değişiklik yok) ---
 
   void onMapCreated(GoogleMapController controller) {
     mapController = controller;
     notifyListeners();
   }
 
-  void moveCamera(LatLng newPosition, {double zoom = 14}) {
-    mapController?.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(target: newPosition, zoom: zoom),
-      ),
-    );
-  }
   void moveCameraToUser() {
     if (currentPosition != null) {
       mapController?.animateCamera(
@@ -76,24 +84,5 @@ class DashboardViewModel extends ChangeNotifier {
         ),
       );
     }
-  }
-
-  Future<void> fetchDashboardData() async {
-    _isLoading = true;
-    notifyListeners();
-
-    // Tüm verileri aynı anda çekmek için Future.wait kullanabiliriz (daha verimli)
-    final results = await Future.wait([
-      _repository.getNearbySaloons(),
-      _repository.getTopRatedSaloons(),
-      _repository.getCampaignSaloons(), // <-- ÇAĞRIYI GERİ EKLEDİK
-    ]);
-
-    _nearbySaloons = results[0];
-    _topRatedSaloons = results[1];
-    _campaignSaloons = results[2]; // <-- LİSTEYİ DOLDURUYORUZ
-
-    _isLoading = false;
-    notifyListeners();
   }
 }
