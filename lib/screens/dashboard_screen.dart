@@ -1,12 +1,106 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:denemeye_devam/core/app_colors.dart';
 import 'package:denemeye_devam/core/app_fonts.dart';
-import 'package:denemeye_devam/features/common/widgets/salon_card.dart';
 import 'package:denemeye_devam/models/saloon_model.dart';
 import 'package:denemeye_devam/viewmodels/dashboard_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../features/appointments/screens/salon_detail_screen.dart';
 
+/// Artık bir kart gibi görünmeyen, düz bir içerik widget'ı.
+class SalonCard extends StatelessWidget {
+  final String name;
+  final String rating;
+  final String description;
+  final List<String> services;
+  final String? imagePath;
+
+  const SalonCard({
+    super.key,
+    required this.name,
+    required this.rating,
+    required this.description,
+    required this.services,
+    this.imagePath,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(15.0),
+          child: SizedBox(
+            height: 120,
+            width: double.infinity,
+            child: imagePath != null && imagePath!.isNotEmpty
+                ? CachedNetworkImage( // <-- Image.network yerine bu kullanılıyor
+              imageUrl: imagePath!,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                color: Colors.grey.shade200,
+                child: const Center(child: CircularProgressIndicator(strokeWidth: 2.0, color: AppColors.primaryColor)),
+              ),
+              errorWidget: (context, url, error) => _buildPlaceholderIcon(),
+            )
+                : _buildPlaceholderIcon(),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4.0, 12.0, 4.0, 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(name, style: AppFonts.h6Bold(color: AppColors.textColorDark), maxLines: 1, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 2),
+              Text(description, style: AppFonts.bodySmall(color: AppColors.textColorLight), maxLines: 1, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(Icons.star, color: AppColors.starColor, size: 18),
+                  const SizedBox(width: 4),
+                  Text(rating, style: AppFonts.bodyMedium(color: AppColors.textColorLight)),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 35,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            itemCount: services.length,
+            itemBuilder: (context, index) {
+              final service = services[index];
+              return _buildServiceTag(service, index == services.length - 1);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlaceholderIcon() {
+    return Container(color: Colors.grey.shade100, child: Center(child: Icon(Icons.store, size: 50, color: Colors.grey.shade400)));
+  }
+
+  Widget _buildServiceTag(String service, bool isLast) {
+    return Container(
+      margin: EdgeInsets.only(right: isLast ? 0 : 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(color: AppColors.primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+      child: Center(child: Text(service, style: AppFonts.bodySmall(color: AppColors.primaryColor))),
+    );
+  }
+}
+
+// ===================================================================
+// 2. Ana Ekran Yapısı (State Yönetimi Optimize Edildi)
+// ===================================================================
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -15,191 +109,274 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  // _selectedIndex ve _pages artık RootScreen tarafından yönetiliyor, burada gerekli değil.
-  // int _selectedIndex = 0;
-  // late final List<Widget> _pages;
-
   @override
   void initState() {
     super.initState();
-    // Dashboard verilerini çekmek için ViewModel'ı kullan
+    // initState'te artık sadece konumu almayı tetikliyoruz. Bu işlem UI'ı bloklamaz.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<DashboardViewModel>(context, listen: false).fetchDashboardData();
+      Provider.of<DashboardViewModel>(context, listen: false).initLocation();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // DashboardContent'i doğrudan döndürüyoruz.
-    // Scaffold ve AppBar artık RootScreen'daki MainApp tarafından sağlanacak.
-    return const _DashboardContent();
+    return const Scaffold(
+      backgroundColor: Colors.white,
+      body: _DashboardContent(),
+    );
   }
 }
 
-// ANA İÇERİK WIDGET'I
+// ===================================================================
+// 3. İçerik Widget'ı (Asenkron Yükleme Entegre Edildi)
+// ===================================================================
 class _DashboardContent extends StatefulWidget {
-  const _DashboardContent({Key? key}) : super(key: key);
+  const _DashboardContent();
 
   @override
   State<_DashboardContent> createState() => _DashboardContentState();
 }
 
 class _DashboardContentState extends State<_DashboardContent> {
+  late Future<List<SaloonModel>> _nearbySaloonsFuture;
+  late Future<List<SaloonModel>> _topRatedSaloonsFuture;
+  late Future<List<SaloonModel>> _campaignSaloonsFuture;
+
   @override
+  void initState() {
+    super.initState();
+    final vm = Provider.of<DashboardViewModel>(context, listen: false);
+    _nearbySaloonsFuture = vm.getNearbySaloons();
+    _topRatedSaloonsFuture = vm.getTopRatedSaloons();
+    _campaignSaloonsFuture = vm.getCampaignSaloons();
+  }
+
   Widget build(BuildContext context) {
+    // ViewModel'e erişim sağlıyoruz. `listen: true` olduğu için
+    // ViewModel'deki değişiklikler (konum, hata durumu vb.) bu widget'ı yeniden çizecektir.
     final vm = Provider.of<DashboardViewModel>(context);
 
-    if (vm.currentPosition == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    final userLatLng = LatLng(
-      vm.currentPosition!.latitude,
-      vm.currentPosition!.longitude,
-    );
-
-    return Column(
-      children: [
-        Expanded(
-          child: vm.isLoading && vm.nearbySaloons.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : RefreshIndicator(
-            onRefresh: () async {
-              await vm.fetchDashboardData();
-              vm.moveCameraToUser();
-            },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Harita bölümü
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: SizedBox(
-                        height: 200,
-                        width: double.infinity,
-                        child: Stack(
-                          children: [
-                            GoogleMap(
-                              padding: const EdgeInsets.only(top: 80),
-                              initialCameraPosition: CameraPosition(
-                                target: userLatLng,
-                                zoom: 14,
-                              ),
-                              onMapCreated: vm.onMapCreated,
-                              myLocationEnabled: true,
-                              myLocationButtonEnabled: true,
-                              zoomControlsEnabled: false,
-                              markers: {
-                                Marker(
-                                  markerId: const MarkerId('user'),
-                                  position: userLatLng,
-                                ),
-                              },
-                            ),
-                            Positioned(
-                              top: 16,
-                              right: 16,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white70,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: IconButton(
-                                  icon: const Icon(Icons.fullscreen),
-                                  onPressed: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => FullScreenMapPage(
-                                          initialPosition: userLatLng,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Salon listeleri
-                  const SectionTitle(title: 'Yakınlarda bulunan salonlar'),
-                  SaloonList(saloons: vm.nearbySaloons),
-                  const SectionDivider(),
-
-                  const SectionTitle(title: 'En yüksek puanlı salonlar'),
-                  SaloonList(saloons: vm.topRatedSaloons),
-                  const SectionDivider(),
-
-                  const SectionTitle(title: 'Kampanyadaki salonlar'),
-                  SaloonList(
-                    saloons: vm.campaignSaloons,
-                    hasCampaign: true,
-                  ),
-                  const SizedBox(height: 20),
-                ],
+    // 1. Hata Durumu Kontrolü
+    // ViewModel'de bir konum hatası var mı diye kontrol ediyoruz.
+    if (vm.locationError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.location_off_rounded, size: 60, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(
+                'Konum Alınamadı',
+                style: AppFonts.h5Bold(color: AppColors.textColorDark),
+                textAlign: TextAlign.center,
               ),
-            ),
+              const SizedBox(height: 8),
+              Text(
+                vm.locationError!, // ViewModel'den gelen hata mesajını gösteriyoruz.
+                textAlign: TextAlign.center,
+                style: AppFonts.bodyMedium(color: AppColors.textColorLight),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Tekrar Dene'),
+                onPressed: () {
+                  // Kullanıcının konumu almayı yeniden tetiklemesine izin veriyoruz.
+                  // `listen: false` çünkü bu işlem sadece bir metodu tetikliyor, UI'ı dinlemesi gerekmiyor.
+                  Provider.of<DashboardViewModel>(context, listen: false).initLocation();
+                },
+              )
+            ],
           ),
         ),
-      ],
+      );
+    }
+
+    // 2. Yükleme Durumu Kontrolü
+    // Hata yoksa, konum bilgisinin gelip gelmediğini kontrol ediyoruz.
+    if (vm.currentPosition == null) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: AppColors.primaryColor),
+            SizedBox(height: 16),
+            Text("Konum bilgisi alınıyor..."),
+          ],
+        ),
+      );
+    }
+
+    // 3. Başarılı Durum
+    // Hata yok ve konum bilgisi mevcutsa, ana ekran içeriğini çiziyoruz.
+    final userLatLng = LatLng(vm.currentPosition!.latitude, vm.currentPosition!.longitude);
+
+    return RefreshIndicator(
+      color: AppColors.primaryColor,
+      onRefresh: () async {
+        // Sayfayı yenilemek için listeleri ve konumu yeniden yüklüyoruz.
+        final vm = Provider.of<DashboardViewModel>(context, listen: false);
+        // Konumu da yeniden almayı tetikleyebiliriz, eğer istenirse.
+        // await vm.initLocation();
+        setState(() {
+          _nearbySaloonsFuture = vm.getNearbySaloons();
+          _topRatedSaloonsFuture = vm.getTopRatedSaloons();
+          _campaignSaloonsFuture = vm.getCampaignSaloons();
+        });
+      },
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 120.0),
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Harita Bölümü
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: SizedBox(
+                  height: 200,
+                  width: double.infinity,
+                  child: GoogleMap(
+                    initialCameraPosition: CameraPosition(target: userLatLng, zoom: 14),
+                    onMapCreated: vm.onMapCreated,
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: false,
+                    zoomControlsEnabled: false,
+                    markers: {Marker(markerId: const MarkerId('user'), position: userLatLng)},
+                  ),
+                ),
+              ),
+            ),
+
+            // Yakındaki Salonlar (FutureBuilder ile)
+            const SectionTitle(title: 'Yakınlarda bulunan salonlar'),
+            _buildSaloonSection(_nearbySaloonsFuture, "Yakında salon bulunamadı."),
+            const SectionDivider(),
+
+            // En Yüksek Puanlı Salonlar (FutureBuilder ile)
+            const SectionTitle(title: 'En yüksek puanlı salonlar'),
+            _buildSaloonSection(_topRatedSaloonsFuture, "Yüksek puanlı salon bulunamadı."),
+            const SectionDivider(),
+
+            // Kampanyadaki Salonlar (FutureBuilder ile)
+            const SectionTitle(title: 'Kampanyadaki salonlar'),
+            _buildSaloonSection(_campaignSaloonsFuture, "Kampanyalı salon bulunamadı."),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // FutureBuilder'ları tekrar etmemek için yardımcı bir metod.
+  Widget _buildSaloonSection(Future<List<SaloonModel>> future, String emptyMessage) {
+    return FutureBuilder<List<SaloonModel>>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SaloonListSkeleton();
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Hata: ${snapshot.error}'));
+        }
+        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          return SaloonList(saloons: snapshot.data!);
+        }
+        return SizedBox(height: 100, child: Center(child: Text(emptyMessage)));
+      },
     );
   }
 }
 
-
-/// Tam ekran harita sayfası
-class FullScreenMapPage extends StatelessWidget {
-  final LatLng initialPosition;
-
-  const FullScreenMapPage({Key? key, required this.initialPosition})
-      : super(key: key);
+// ===================================================================
+// 4. İskelet Yükleyici ve Diğer Yardımcı Widget'lar
+// ===================================================================
+class SaloonListSkeleton extends StatelessWidget {
+  const SaloonListSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final vm = Provider.of<DashboardViewModel>(context, listen: false);
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Harita')),
-      body: GoogleMap(
-        initialCameraPosition: CameraPosition(
-          target: initialPosition,
-          zoom: 14,
-        ),
-        onMapCreated: vm.onMapCreated,
-        myLocationEnabled: true,
-        myLocationButtonEnabled: true,
-        zoomControlsEnabled: true,
-        markers: {
-          Marker(
-            markerId: const MarkerId('user'),
-            position: initialPosition,
-          ),
+    return SizedBox(
+      height: 275,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        itemCount: 2,
+        itemBuilder: (context, index) {
+          return Container(
+            width: 300,
+            margin: const EdgeInsets.only(right: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(height: 120, width: double.infinity, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(15.0))),
+                const SizedBox(height: 12),
+                Container(height: 20, width: 200, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(4))),
+                const SizedBox(height: 8),
+                Container(height: 14, width: 250, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(4))),
+              ],
+            ),
+          );
         },
       ),
     );
   }
 }
 
+class SaloonList extends StatelessWidget {
+  final List<SaloonModel> saloons;
+  const SaloonList({super.key, required this.saloons});
 
-
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 275,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        itemCount: saloons.length,
+        itemBuilder: (context, index) {
+          final salon = saloons[index];
+          final serviceNames = salon.services.map((s) => s.serviceName).toList();
+          return Container(
+            width: 300,
+            margin: EdgeInsets.only(right: index == saloons.length - 1 ? 0 : 16),
+            child: InkWell(
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => SalonDetailScreen(salonId: salon.saloonId))),
+              borderRadius: BorderRadius.circular(15.0),
+              child: SalonCard(
+                name: salon.saloonName,
+                rating: salon.avgRating?.toStringAsFixed(1) ?? 'N/A',
+                description: salon.saloonAddress ?? 'Adres bilgisi yok',
+                services: serviceNames.isNotEmpty ? serviceNames : ["Güzellik Merkezi", "Bakım"],
+                imagePath: salon.titlePhotoUrl,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
 class SectionTitle extends StatelessWidget {
   final String title;
   const SectionTitle({super.key, required this.title});
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
       child: Text(
         title,
-        style: AppFonts.poppinsBold(
-          fontSize: 18,
+        style: AppFonts.h5Bold(
           color: AppColors.textColorDark,
         ),
       ),
@@ -212,49 +389,9 @@ class SectionDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-      child: Divider(color: AppColors.dividerColor, thickness: 1),
-    );
-  }
-}
-
-class SaloonList extends StatelessWidget {
-  final List<SaloonModel> saloons;
-  final bool hasCampaign;
-  const SaloonList({
-    super.key,
-    required this.saloons,
-    this.hasCampaign = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (saloons.isEmpty) {
-      return const SizedBox(
-        height: 100,
-        child: Center(child: Text("Bu kategoride salon bulunamadı.")),
-      );
-    }
-    return SizedBox(
-      height: 285,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        itemCount: saloons.length,
-        itemBuilder: (context, index) {
-          final salon = saloons[index];
-          final serviceNames = salon.services
-              .map((s) => s.serviceName)
-              .toList();
-          return SalonCard(
-            salonId: salon.saloonId,
-            name: salon.saloonName,
-            rating: '4.8',
-            services: serviceNames.isNotEmpty ? serviceNames : ["Hizmet Yok"],
-            hasCampaign: hasCampaign,
-          );
-        },
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      child: Divider(
+          color: AppColors.dividerColor.withOpacity(0.5), thickness: 1),
     );
   }
 }

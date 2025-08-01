@@ -11,7 +11,9 @@ class SaloonModel {
   final String? email;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final List<ServiceModel> services; // <-- 1. YENİ ALAN: Hizmet listesi
+  final List<ServiceModel> services;
+  final double avgRating;
+  final int ratingCount;
 
   SaloonModel({
     required this.saloonId,
@@ -25,7 +27,9 @@ class SaloonModel {
     this.email,
     required this.createdAt,
     required this.updatedAt,
-    this.services = const []
+    this.services = const [],
+    this.avgRating = 0.0,
+    this.ratingCount = 0,
   });
 
   factory SaloonModel.fromJson(Map<String, dynamic> json) {
@@ -53,6 +57,8 @@ class SaloonModel {
           .cast<ServiceModel>()
           .toList()
           : [],
+      avgRating: (json['avg_rating'] as num?)?.toDouble() ?? 0.0, // YENİ
+      ratingCount: json['rating_count'] as int? ?? 0, // YENİ
     );
   }
 

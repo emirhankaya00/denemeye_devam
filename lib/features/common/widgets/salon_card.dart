@@ -57,7 +57,7 @@ class SalonCard extends StatelessWidget {
                   child: Center(
                     // Eğer imagePath varsa Image.asset göster, yoksa Icon göster
                     child: imagePath != null && imagePath!.isNotEmpty
-                        ? Image.asset(
+                        ? Image.network(
                       imagePath!,
                       fit: BoxFit.cover,
                       height: 70,
