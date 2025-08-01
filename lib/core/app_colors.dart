@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Uygulamanızın ana renk paleti
-  static const Color primary = Color(0xFFDE013F); // Ana renk (mor tonu)
+  static const Color primary = Color(0xFF5271FF); // Ana renk (mor tonu)
   static const Color primaryLight = Color(0xFFBB86FC); // Ana rengin daha açık tonu
   static const Color primaryDark = Color(0xFF3700B3); // Ana rengin daha koyu tonu
 
@@ -10,8 +10,8 @@ class AppColors {
   static const Color secondaryLight = Color(0xFF66FFF9); // Vurgu rengin daha açık tonu
   static const Color secondaryDark = Color(0xFF018786); // Vurgu rengin daha koyu tonu
 
-  static const Color primaryColor = Color(0xFFE2004F); // Başlıktaki ve alttaki çubuktaki bordo/kırmızı
-  static const Color accentColor = Color(0xFFFC5C7D); // Canlı pembe/kırmızı vurgu (belki buton içi)
+  static const Color primaryColor = Color(0xFF5271FF); // Başlıktaki ve alttaki çubuktaki bordo/kırmızı
+  static const Color accentColor = Color(0xFF5271FF); // Canlı pembe/kırmızı vurgu (belki buton içi)
   static const Color backgroundColorLight = Color(0xFFF9F9F9); // Açık gri arka plan
   static const Color backgroundColorDark = Color(0xFFF0F0F0); // Biraz daha koyu gri arka plan
   static const Color cardColor = Color(0xFFFFFFFF); // Beyaz kart

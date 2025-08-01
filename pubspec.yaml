@@ -76,6 +76,8 @@ flutter: # Bu ilk 'flutter:' bloğu
           weight: 700
   assets:
     - assets/map_placeholder.png
+    - assets/google_logo.png
+    - assets/iris_logo.jpg
 
   # To add assets to your application, add an assets section, like this:
   # assets:
