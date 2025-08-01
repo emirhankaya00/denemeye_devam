@@ -7,12 +7,12 @@ class NotificationCard extends StatelessWidget {
   final int badgeCount;      // Örneğin kaçıncı bildirim
 
   const NotificationCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.message,
     required this.timeAgo,
     this.badgeCount = 1,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

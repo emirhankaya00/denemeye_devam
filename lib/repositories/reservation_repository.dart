@@ -44,9 +44,10 @@ class ReservationRepository {
   /// Bir randevunun durumunu günceller (örn: iptal etme).
   Future<void> updateReservationStatus(String reservationId, ReservationStatus status) async {
     try {
+      final statusString = status.toString().split('.').last;
       await _client
           .from('reservations')
-          .update({'status': status.name}) // Enum'ı string'e çeviriyoruz
+          .update({'status': statusString})
           .eq('reservation_id', reservationId);
     } catch (e) {
       debugPrint('updateReservationStatus Hata: $e');

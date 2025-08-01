@@ -10,51 +10,59 @@ import 'package:denemeye_devam/features/common/widgets/notification_card.dart';
 import '../features/appointments/screens/appointments_screen.dart';
 import '../models/reservation_model.dart';
 
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({Key? key}) : super(key: key);
 
   @override
+  _NotificationsScreenState createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // build bittikten sonra veri çek
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AppointmentsViewModel>().fetchAppointments();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final vm = Provider.of<AppointmentsViewModel>(context);
+    // context.watch sayesinde ViewModel'deki değişiklikler UI'ı tetikler
+    final vm = context.watch<AppointmentsViewModel>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Bildirimler')),
-      // Pull to refresh eklendi:
       body: vm.isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-        onRefresh: vm.fetchAppointments,
-        child: _buildList(context, vm),
-      ),
+              onRefresh: vm.fetchAppointments,
+              child: _buildList(context, vm),
+            ),
     );
   }
 
   Widget _buildList(BuildContext context, AppointmentsViewModel vm) {
     final items = [...vm.allAppointments]
-    ..sort((a,b) => b.createdAt.compareTo(a.createdAt));
-    // Tarihe göre grupla
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     final grouped = _groupByDate(items);
 
     return ListView(
-      physics: const AlwaysScrollableScrollPhysics(), // RefreshIndicator için
+      physics: const AlwaysScrollableScrollPhysics(),
       children: [
         for (final entry in grouped.entries) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               entry.key,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
           for (final res in entry.value)
             GestureDetector(
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const AppointmentsScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const AppointmentsScreen()),
               ),
               child: NotificationCard(
                 title: res.saloon?.saloonName ?? '—',
@@ -68,41 +76,45 @@ class NotificationsScreen extends StatelessWidget {
     );
   }
 
-  /// Bugün, Dün yoksa tam tarih başlığı
-  static Map<String, List> _groupByDate(List list) {
-    final Map<String, List> map = {};
+  static Map<String, List<ReservationModel>> _groupByDate(
+    List<ReservationModel> list,
+  ) {
+    final Map<String, List<ReservationModel>> map = {};
     final now = DateTime.now();
     for (var item in list) {
       final dt = item.createdAt;
-      final diff = DateTime(now.year, now.month, now.day)
-          .difference(DateTime(dt.year, dt.month, dt.day))
-          .inDays;
+      final diff = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).difference(DateTime(dt.year, dt.month, dt.day)).inDays;
       String key;
-      if (diff == 0) key = 'Bugün';
-      else if (diff == 1) key = 'Dün';
-      else key = DateFormat('dd MMMM yyyy', 'tr').format(dt);
+      if (diff == 0)
+        key = 'Bugün';
+      else if (diff == 1)
+        key = 'Dün';
+      else
+        key = DateFormat('dd MMMM yyyy', 'tr').format(dt);
       map.putIfAbsent(key, () => []).add(item);
     }
     return map;
   }
 
-  /// Rezervasyon durumuna göre gösterilecek metin
   static String _messageForStatus(ReservationStatus status) {
     switch (status) {
       case ReservationStatus.confirmed:
-        return 'randevunuz onaylandı';
+        return 'Randevunuz onaylandı';
       case ReservationStatus.cancelled:
-        return 'randevunuz iptal edildi';
+        return 'Randevunuz iptal edildi';
       case ReservationStatus.completed:
-        return 'randevunuz tamamlandı';
+        return 'Randevunuz tamamlandı';
       case ReservationStatus.noShow:
-        return 'randevunuza katılmadınız';
+        return 'Randevunuza katılmadınız';
       default:
-        return 'randevu durumu güncellendi';
+        return 'Randevu durumu güncellendi';
     }
   }
 
-  /// “5 dakika önce” / “2 saat önce” / “3 gün önce”
   static String _timeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
     if (diff.inMinutes < 1) return 'şimdi';
