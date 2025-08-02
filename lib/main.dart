@@ -23,8 +23,8 @@ void main() async {
 
   await Supabase.initialize(
     // Access the keys from dotenv
-    url: dotenv.env['REMOVED']!,
-    anonKey: dotenv.env['REMOVED']!,
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
   runApp(

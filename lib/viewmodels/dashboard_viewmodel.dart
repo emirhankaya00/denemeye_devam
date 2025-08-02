@@ -18,32 +18,43 @@ class DashboardViewModel extends ChangeNotifier {
   /// Hata durumlarını ve izinleri yönetir.
   Future<void> initLocation() async {
     locationError = null;
+    notifyListeners();
+
     try {
+      // 1) Servis açık mı?
       if (!await Geolocator.isLocationServiceEnabled()) {
-        throw 'Konum servisi kapalı. Lütfen aktif hale getirin.';
+        throw 'Konum servisi kapalı. Açın lütfen.';
       }
+
+      // 2) Mevcut izni al
       var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
+
+      // 3) Eğer reddedilmiş (tek seferlik veya kalıcı) ise tekrar sor
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
         perm = await Geolocator.requestPermission();
-        if (perm == LocationPermission.denied) {
-          throw 'Konum izni reddedildi.';
-        }
       }
+
+      // 4) Hala reddedildiyse hata atmaca
+      if (perm == LocationPermission.denied) {
+        throw 'Konum izni reddedildi.';
+      }
+
+      // 5) Kalıcı reddedildiyse direkt ayarlara yolla
       if (perm == LocationPermission.deniedForever) {
-        throw 'Konum izni kalıcı olarak reddedildi. Ayarlardan izin vermeniz gerekmektedir.';
+        await Geolocator.openAppSettings();
+        throw 'Konum izni kalıcı olarak reddedildi. Lütfen ayarlardan izin verin.';
       }
+
+      // 6) Pozisyonu çek
       currentPosition = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-      // Konum alındığında dinleyicileri (UI'ı) bilgilendir.
-      notifyListeners();
+      locationError = null;
     } catch (e) {
-      debugPrint("Konum alınamadı: $e");
       locationError = e.toString();
-      // UI'da gösterilecek bir hata durumu da yönetilebilir.
-    }
-    finally {
-      notifyListeners(); // <-- Başarılı veya hatalı her durumda UI'ı güncelle
+    } finally {
+      notifyListeners();
     }
   }
 

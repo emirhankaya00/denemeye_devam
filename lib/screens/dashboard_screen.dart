@@ -9,7 +9,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../features/appointments/screens/salon_detail_screen.dart';
 
 /// Artık bir kart gibi görünmeyen, düz bir içerik widget'ı.
-class SalonCard extends StatelessWidget {
+class SalonCard extends StatefulWidget {
   final String name;
   final String rating;
   final String description;
@@ -26,7 +26,24 @@ class SalonCard extends StatelessWidget {
   });
 
   @override
+  _SalonCardState createState() => _SalonCardState();
+}
+
+class _SalonCardState extends State<SalonCard>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
+
+    final name = widget.name;
+    final rating = widget.rating;
+    final description = widget.description;
+    final services = widget.services;
+    final imagePath = widget.imagePath;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -155,75 +172,9 @@ class _DashboardContentState extends State<_DashboardContent> {
     // ViewModel'e erişim sağlıyoruz. `listen: true` olduğu için
     // ViewModel'deki değişiklikler (konum, hata durumu vb.) bu widget'ı yeniden çizecektir.
     final vm = Provider.of<DashboardViewModel>(context);
-
-    // 1. Hata Durumu Kontrolü
-    // ViewModel'de bir konum hatası var mı diye kontrol ediyoruz.
-    if (vm.locationError != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.location_off_rounded, size: 60, color: Colors.grey),
-              const SizedBox(height: 16),
-              Text(
-                'Konum Alınamadı',
-                style: AppFonts.h5Bold(color: AppColors.textColorDark),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                vm.locationError!, // ViewModel'den gelen hata mesajını gösteriyoruz.
-                textAlign: TextAlign.center,
-                style: AppFonts.bodyMedium(color: AppColors.textColorLight),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor,
-                  foregroundColor: Colors.white,
-                ),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Tekrar Dene'),
-                onPressed: () {
-                  // Kullanıcının konumu almayı yeniden tetiklemesine izin veriyoruz.
-                  // `listen: false` çünkü bu işlem sadece bir metodu tetikliyor, UI'ı dinlemesi gerekmiyor.
-                  Provider.of<DashboardViewModel>(context, listen: false).initLocation();
-                },
-              )
-            ],
-          ),
-        ),
-      );
-    }
-
-    // 2. Yükleme Durumu Kontrolü
-    // Hata yoksa, konum bilgisinin gelip gelmediğini kontrol ediyoruz.
-    if (vm.currentPosition == null) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: AppColors.primaryColor),
-            SizedBox(height: 16),
-            Text("Konum bilgisi alınıyor..."),
-          ],
-        ),
-      );
-    }
-
-    // 3. Başarılı Durum
-    // Hata yok ve konum bilgisi mevcutsa, ana ekran içeriğini çiziyoruz.
-    final userLatLng = LatLng(vm.currentPosition!.latitude, vm.currentPosition!.longitude);
-
     return RefreshIndicator(
       color: AppColors.primaryColor,
       onRefresh: () async {
-        // Sayfayı yenilemek için listeleri ve konumu yeniden yüklüyoruz.
-        final vm = Provider.of<DashboardViewModel>(context, listen: false);
-        // Konumu da yeniden almayı tetikleyebiliriz, eğer istenirse.
-        // await vm.initLocation();
         setState(() {
           _nearbySaloonsFuture = vm.getNearbySaloons();
           _topRatedSaloonsFuture = vm.getTopRatedSaloons();
@@ -236,7 +187,7 @@ class _DashboardContentState extends State<_DashboardContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Harita Bölümü
+            // ——— Harita Bölümü ———
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: ClipRRect(
@@ -244,29 +195,67 @@ class _DashboardContentState extends State<_DashboardContent> {
                 child: SizedBox(
                   height: 200,
                   width: double.infinity,
-                  child: GoogleMap(
-                    initialCameraPosition: CameraPosition(target: userLatLng, zoom: 14),
-                    onMapCreated: vm.onMapCreated,
-                    myLocationEnabled: true,
-                    myLocationButtonEnabled: false,
-                    zoomControlsEnabled: false,
-                    markers: {Marker(markerId: const MarkerId('user'), position: userLatLng)},
+                  child: Stack(
+                    children: [
+                      // Alt katman: harita veya placeholder
+                      vm.currentPosition != null
+                          ? GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: LatLng(
+                            vm.currentPosition!.latitude,
+                            vm.currentPosition!.longitude,
+                          ),
+                          zoom: 14,
+                        ),
+                        onMapCreated: vm.onMapCreated,
+                        myLocationEnabled: true,
+                        myLocationButtonEnabled: false,
+                        zoomControlsEnabled: false,
+                        markers: {
+                          Marker(
+                            markerId: const MarkerId('user'),
+                            position: LatLng(
+                              vm.currentPosition!.latitude,
+                              vm.currentPosition!.longitude,
+                            ),
+                          ),
+                        },
+                      )
+                          : Container(color: Colors.grey.shade200),
+
+                      // Üst katman: izin yoksa buton
+                      if (vm.currentPosition == null)
+                        Positioned.fill(
+                          child: Center(
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.location_searching),
+                              label: const Text('Konum iznini tekrar iste'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryColor,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () {
+                                Provider.of<DashboardViewModel>(
+                                  context,
+                                  listen: false,
+                                ).initLocation();
+                              },
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
             ),
 
-            // Yakındaki Salonlar (FutureBuilder ile)
+            // ——— Salon listeleri ———
             const SectionTitle(title: 'Yakınlarda bulunan salonlar'),
             _buildSaloonSection(_nearbySaloonsFuture, "Yakında salon bulunamadı."),
             const SectionDivider(),
-
-            // En Yüksek Puanlı Salonlar (FutureBuilder ile)
             const SectionTitle(title: 'En yüksek puanlı salonlar'),
             _buildSaloonSection(_topRatedSaloonsFuture, "Yüksek puanlı salon bulunamadı."),
             const SectionDivider(),
-
-            // Kampanyadaki Salonlar (FutureBuilder ile)
             const SectionTitle(title: 'Kampanyadaki salonlar'),
             _buildSaloonSection(_campaignSaloonsFuture, "Kampanyalı salon bulunamadı."),
             const SizedBox(height: 20),
@@ -395,3 +384,4 @@ class SectionDivider extends StatelessWidget {
     );
   }
 }
+
