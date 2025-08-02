@@ -19,7 +19,7 @@ class DashboardViewModel extends ChangeNotifier {
   Future<void> initLocation() async {
     locationError = null;
     notifyListeners();
-
+//
     try {
       // 1) Servis açık mı?
       if (!await Geolocator.isLocationServiceEnabled()) {
